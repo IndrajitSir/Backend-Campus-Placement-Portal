@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, changeCurrentName, changeCurrentEmail, updateApproved } from "../controllers/user.controller";
-import { verifyUser } from '../middlewares/verifyUser.middleware';
+import { logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, changeCurrentName, changeCurrentEmail, updateApproved } from "../controllers/user.controller.js";
+import { verifyUser } from '../middlewares/verifyUser.middleware.js';
 const router = Router();
 
 router.use(verifyUser);
@@ -13,3 +13,5 @@ router.route("/update-account").patch(updateAccountDetails);
 router.route("/update-name").patch(changeCurrentName);
 router.route("/update-email").patch(changeCurrentEmail);
 router.route("/change-approval").patch(updateApproved);
+
+export default router

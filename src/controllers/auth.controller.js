@@ -1,13 +1,14 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { User } from "../models/user.models";
-import { options } from "../constants";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { User } from "../models/user.models.js";
+import { options } from "../constants.js";
+// curl -X POST http://localhost:6005/api/v1/auth/register -H "Content-Type:application/json" -d '{"name": "indra", "email": "indrajitmandal779@gmail.com", "password": 12345, "role": "student"}'
 const register = asyncHandler(async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
         if (!name) {
-            throw new ApiError(400, "All fields are required")
+            throw new ApiError(400, "Name is required")
         }
         if (!email) {
             throw new ApiError(400, "Email is required")
@@ -47,7 +48,7 @@ const register = asyncHandler(async (req, res) => {
                 )
             )
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        throw new ApiError(500, `${err}`);
     }
 });
 
@@ -60,10 +61,12 @@ const login = asyncHandler(async (req, res) => {
         if (!password) {
             throw new ApiError(400, "Password is required")
         }
+        console.log(`Email : ${email} and Password : ${password}`);
+        
         const user = await User.findOne({ email });
 
         if (!user) {
-            throw new ApiError(404, "User does not exist or Invalid user credentials")
+            return res.status(500).json( new ApiError(404, "User does not exist or Invalid user credentials"));
         }
 
         const isPasswordValid = await User.isPasswordCorrect(password);
@@ -87,7 +90,7 @@ const login = asyncHandler(async (req, res) => {
                 )
             )
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        return res.status(500).json( new ApiError(500, "Server error"));
     }
 });
 

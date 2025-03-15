@@ -1,7 +1,7 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { Application } from "../models/application.model";
-import { ApiResponse } from "../utils/ApiResponse";
-import { ApiError } from "../utils/ApiError";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { Application } from "../models/application.model.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const applyForPlacement = asyncHandler(async (req, res) => {
     try {

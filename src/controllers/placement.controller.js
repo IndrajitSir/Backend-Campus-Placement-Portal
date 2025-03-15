@@ -1,7 +1,7 @@
-import { ApiError } from "../utils/ApiError";
-import { asyncHandler } from "../utils/asyncHandler";
-import { Placement } from "../models/placement.model";
-import { ApiResponse } from "../utils/ApiResponse";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { Placement } from "../models/placement.model.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 
 const newPlacement = asyncHandler(async (req, res) => {
     try {
@@ -26,8 +26,7 @@ const newPlacement = asyncHandler(async (req, res) => {
 const getAllPlacements = asyncHandler(async (req, res) => {
     try {
         const placements = await Placement.find();
-        res
-            .status(200)
+        res.status(200)
             .json(new ApiResponse(200, placements, ""));
     } catch (err) {
         throw new ApiError(500, "Server error");

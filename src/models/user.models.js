@@ -5,9 +5,8 @@ const userSchema = new Schema(
         name: { type: String, required: true },
         email: { type: String, unique: true, required: true },
         password: { type: String, required: true },
-        phoneNumber: { type: Number },
+        phoneNumber: { type: Number, default: null },
         role: { type: String, enum: ["super_admin", "admin", "placement_staff", "student"], required: true },
-        approved: { type: Boolean, default: false },
         refreshToken: { type: String }
     }, { timestamps: true }
 )

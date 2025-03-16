@@ -8,10 +8,10 @@ const applyForPlacement = asyncHandler(async (req, res) => {
         const placementId = req.params.placementId;
         const userID = req.user.id;
         if (!placementId) {
-            throw new ApiError(400, "Placement ID is missing");
+            return res.status(400).json(new ApiError(400, "Placement ID is missing"));
         }
         if (!userID) {
-            throw new ApiError(400, "User ID is missing");
+            return res.status(400).json(new ApiError(400, "User ID is missing"));
         }
         const application = await Application.create({
             user_id: userID,
@@ -22,7 +22,7 @@ const applyForPlacement = asyncHandler(async (req, res) => {
         res.status(200)
             .json(new ApiResponse(200, application, ""));
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
@@ -32,7 +32,7 @@ const appliedApllications = asyncHandler(async (req, res) => {
         res.status(200)
         .json(new ApiResponse(200, applications, ""));
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 

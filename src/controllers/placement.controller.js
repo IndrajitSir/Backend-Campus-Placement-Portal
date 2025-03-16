@@ -7,7 +7,7 @@ const newPlacement = asyncHandler(async (req, res) => {
     try {
         const { company_name, job_title, description, eligibility, last_date } = req.body;
         if ([company_name, job_title, description, eligibility, last_date].some((field) => field?.trim() === "")) {
-            throw new ApiError(400, "All fields are required");
+            return res.status(400).json(new ApiError(400, "All fields are required"));
         }
 
         const newPlacement = await Placement.create({
@@ -17,9 +17,9 @@ const newPlacement = asyncHandler(async (req, res) => {
         res.json(newPlacement);
         return res
             .status(201)
-            .json(new ApiResponse(200, newPlacement, "New Placement registered Successfully"))
+            .json(new ApiResponse(201, newPlacement, "New Placement registered Successfully"))
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
@@ -29,7 +29,7 @@ const getAllPlacements = asyncHandler(async (req, res) => {
         res.status(200)
             .json(new ApiResponse(200, placements, ""));
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
@@ -37,14 +37,14 @@ const deletePlacement = asyncHandler(async (req, res) => {
     try {
         const id = req.params.id;
         if (!id) {
-            throw new ApiError(400, "ID is missing");
+            return res.status(400).json(new ApiError(400, "ID is missing"));
         }
         await Placement.findByIdAndDelete(id);
         res
         .status(200)
         .json(new ApiResponse(200, {}, "Placement deleted"));
     } catch (err) {
-        throw new ApiError(500, "Server error");
+        return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 export { newPlacement, getAllPlacements, deletePlacement }

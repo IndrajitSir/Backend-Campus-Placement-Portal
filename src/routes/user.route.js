@@ -14,7 +14,6 @@ router.route("/update-password").patch(changeCurrentPassword);
 router.route("/update-account").patch(updateAccountDetails);
 router.route("/update-name").patch(changeCurrentName);
 router.route("/update-email").patch(changeCurrentEmail);
-router.route("/change-approval").patch(updateApproved);
 router.route("/update-phoneNumber").patch(updatePhoneNumber);
 
 // Student specific routes declaration

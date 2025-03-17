@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import passport from "./config/passport.js"
-import { session } from "express-session";
+import session from 'express-session';
 const app = express();
 
 app.use(cors({  
@@ -24,12 +24,12 @@ import authRoutes from "./routes/auth.route.js"
 import placementRoutes from "./routes/placement.route.js"
 import applicationRoutes from "./routes/application.route.js"
 import userRoutes from "./routes/user.route.js"
-
+import adminRoutes from "./routes/admin.route.js"
 //routes declaration
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/placements", placementRoutes);
 app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1/users",userRoutes);
-
+app.use("/api/v1/admin",adminRoutes);
 export { app }

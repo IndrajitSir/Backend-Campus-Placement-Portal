@@ -1,13 +1,10 @@
-import {Router} from 'express';
-import { register, login, registerAdmin } from '../controllers/auth.controller.js';
+import { Router } from 'express';
+import { register, login } from '../controllers/auth.controller.js';
 import passport from '../config/passport.js';
 const router = Router();
 
 router.route("/register").post(register);
 router.route("/login").post(login);
-
-// Secured routes only for admins
-router.route("/register-admin").post(registerAdmin);
 
 // **Google Auth Routes**
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

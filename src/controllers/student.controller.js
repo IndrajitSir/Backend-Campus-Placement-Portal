@@ -1,8 +1,8 @@
-import { Student } from "../models/student.model";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
-import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary";
+import { Student } from "../models/student.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const uploadResume = asyncHandler(async (req, res) => {
     const resumeLocalPath = req.files?.resume[0]?.path;

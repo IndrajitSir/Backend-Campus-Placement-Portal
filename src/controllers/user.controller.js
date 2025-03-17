@@ -74,7 +74,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body
         const user = await User.findById(req.user?._id)
-        const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+        const isPasswordCorrect = await user.isPasswordCorrect(oldPassword.toString())
 
         if (!isPasswordCorrect) {
             return res.status(400).json(new ApiError(400, "Invalid old password"))
@@ -94,7 +94,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 const updatePhoneNumber = asyncHandler(async (req, res) => {
     try {
-        const {phone} =req.body;
+        const { phone } = req.body;
         if (!phone) {
             return res.status(400).json(new ApiError(400, "Phone number is missing!"))
         }
@@ -129,9 +129,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
     try {
-        const { name, email } = req.body
+        const { name, email, phone } = req.body
 
-        if (!name || !email) {
+        if (!name || !email || !phone) {
             return res.status(400).json(new ApiError(400, "All fields are required"))
         }
 
@@ -140,7 +140,8 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             {
                 $set: {
                     name,
-                    email: email
+                    email: email,
+                    phoneNumber: phone
                 }
             },
             { new: true }
@@ -194,23 +195,4 @@ const changeCurrentEmail = asyncHandler(async (req, res) => {
     }
 });
 
-const updateApproved = asyncHandler(async (req, res) => {
-    try {
-        const { approve } = req.body;
-        if (approve == null) {
-            return res.status(400).json(new ApiError(400, "Approve(Data) is Required"))
-        }
-        const user = await User.findByIdAndUpdate(req.user._id, {
-            $set: {
-                approved: approve
-            }
-        }, { new: true }).select("-password");
-        return res
-            .status(200)
-            .json(new ApiResponse(200, user, "Approved successfully"))
-    } catch (err) {
-        return res.status(400).json(new ApiError(500, "Server error"));
-    }
-});
-
-export { logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, changeCurrentName, changeCurrentEmail, updateApproved, updatePhoneNumber }
+export { logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, changeCurrentName, changeCurrentEmail, updatePhoneNumber }

@@ -1,7 +1,7 @@
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth2').Strategy;
-const GitHubStrategy = require('passport-github2').Strategy;
-const LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth2';
+import { Strategy as GitHubStrategy } from 'passport-github2';
+import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
@@ -25,14 +25,14 @@ passport.use(new GitHubStrategy({
 }));
 
 // **LinkedIn Strategy**
-passport.use(new LinkedInStrategy({
-    clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: "/auth/linkedin/callback",
-    scope: ['r_liteprofile', 'r_emailaddress'],
-    state: true
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
-}));
+// passport.use(new LinkedInStrategy({
+//     clientID: process.env.LINKEDIN_CLIENT_ID,
+//     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+//     callbackURL: "/auth/linkedin/callback",
+//     scope: ['r_liteprofile', 'r_emailaddress'],
+//     state: true
+// }, (accessToken, refreshToken, profile, done) => {
+//     return done(null, profile);
+// }));
 
 export default passport;

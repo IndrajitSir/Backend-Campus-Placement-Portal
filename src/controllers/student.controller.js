@@ -31,7 +31,7 @@ const updateResume = asyncHandler(async (req, res) => {
 
     const student = await Student.find({ student_id: req.user._id });
 
-    if(!student) return res.status(404).json(new ApiError(404, "Student not found!"));
+    if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
 
     await deleteFromCloudinary(student.resume);
     const uploadedNewResume = await uploadOnCloudinary(newResumeLocalPath);
@@ -47,9 +47,9 @@ const updateResume = asyncHandler(async (req, res) => {
 
 const deleteResume = asyncHandler(async (req, res) => {
     const student = await Student.find({ student_id: req.user._id });
-    
-    if(!student) return res.status(404).json(new ApiError(404, "Student not found!"));
-    
+
+    if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
+
     await deleteFromCloudinary(student.resume);
 
     const response = await Student.findOneAndDelete({ student_id: req.user._id }, { $set: { resume: null } }, { returnNewDocument: true });
@@ -60,4 +60,27 @@ const deleteResume = asyncHandler(async (req, res) => {
     return res.status(201)
         .json(new ApiResponse(201, response, "Resume updated successfully!"))
 });
-export { uploadResume, updateResume, deleteResume }
+
+const getAllStudents = asyncHandler(async (req, res) => {
+    try {
+        const students = await Student.find();
+        res.status(200)
+            .json(new ApiResponse(200, students, ""));
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+
+const getOneStudent = asyncHandler(async (req, res) => {
+    const { nameOremail } = req.body;
+    if (!nameOremail) {
+        return res.status(400).json(new ApiError(400, "value is missing"))
+    }
+    const existedStudent = await User.findOne({
+        $or: [{ name: nameOremail }, { email: nameOremail }]
+    })
+    if (!existedUser) return res.status(409).json(new ApiError(409, "Student does not exists"));
+    const student = await Student.findOne({ student_id: existedStudent._id }).populate("student_id").select("-password -refreshToken");
+    return res.status(201).json(new ApiResponse(200, student, ""));
+});
+export { uploadResume, updateResume, deleteResume, getAllStudents, getOneStudent }

@@ -25,6 +25,7 @@ import placementRoutes from "./routes/placement.route.js"
 import applicationRoutes from "./routes/application.route.js"
 import userRoutes from "./routes/user.route.js"
 import adminRoutes from "./routes/admin.route.js"
+import studentRoutes from "./routes/student.route.js"
 //routes declaration
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/auth", authRoutes);
@@ -32,4 +33,5 @@ app.use("/api/v1/placements", placementRoutes);
 app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1/users",userRoutes);
 app.use("/api/v1/admin",adminRoutes);
+app.use("/api/v1/student",studentRoutes);
 export { app }

@@ -58,7 +58,7 @@ const updatePlacement = asyncHandler(async (req, res) => {
         const updatedPlacement = await Placement.findByIdAndUpdate(id, {updatedPlacementPost}, {new: true});
         res
         .status(204)
-        .json(new ApiResponse(204, updatePlacement, "Placement Post Updated"));
+        .json(new ApiResponse(204, updatedPlacement, "Placement Post Updated"));
     } catch (error) {
         return res.status(500).json(new ApiError(500, "Server error"));
     }

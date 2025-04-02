@@ -14,10 +14,10 @@ const applyForPlacement = asyncHandler(async (req, res) => {
             return res.status(400).json(new ApiError(400, "User ID is missing"));
         }
         const isApplied = await Application.findOne({
-            $and: [{user_id: userID, placement_id: placementId, status: "applied"}]
+            $and: [{ user_id: userID, placement_id: placementId, status: "applied" }]
         });
-        if(isApplied){
-            return res.status(409).json(new ApiResponse(409, {},"Already Applied!"));
+        if (isApplied) {
+            return res.status(409).json(new ApiResponse(409, {}, "Already Applied!"));
         }
         const application = await Application.create({
             user_id: userID,
@@ -36,10 +36,19 @@ const appliedApllications = asyncHandler(async (req, res) => {
     try {
         const applications = await Application.find({ user_id: req.user._id }).populate("placement_id");
         res.status(200)
-        .json(new ApiResponse(200, applications, ""));
+            .json(new ApiResponse(200, applications, ""));
     } catch (err) {
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
-export { applyForPlacement, appliedApllications }
+const getAllAppliedApplication = asyncHandler(async (req, res) => {
+    try {
+        const applications = await Application.find().populate({ placement_id: "placement_id", user_id: "user_id" });
+        res.status(200).json(new ApiResponse(200, applications, ""));
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+
+export { applyForPlacement, appliedApllications, getAllAppliedApplication }

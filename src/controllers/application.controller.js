@@ -17,7 +17,7 @@ const applyForPlacement = asyncHandler(async (req, res) => {
             $and: [{user_id: userID, placement_id: placementId, status: "applied"}]
         });
         if(isApplied){
-            return res.status(409).json(new ApiResponse(409, "Already Applied!"));
+            return res.status(409).json(new ApiResponse(409, {},"Already Applied!"));
         }
         const application = await Application.create({
             user_id: userID,

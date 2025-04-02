@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 const verifyUserWithRole = (roles) => asyncHandler(async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+        const token = req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.accessToken;
         console.log("request arrived in roles");
         console.log(`token: ${req.header("Authorization")} || ${req.cookies?.accessToken}`);
         

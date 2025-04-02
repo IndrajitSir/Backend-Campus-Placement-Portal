@@ -32,7 +32,7 @@ const applyForPlacement = asyncHandler(async (req, res) => {
     }
 });
 
-const appliedApllications = asyncHandler(async (req, res) => {
+const appliedApllication = asyncHandler(async (req, res) => {
     try {
         const applications = await Application.find({ user_id: req.user._id }).populate("placement_id");
         res.status(200)
@@ -42,13 +42,39 @@ const appliedApllications = asyncHandler(async (req, res) => {
     }
 });
 
-const getAllAppliedApplication = asyncHandler(async (req, res) => {
+const getAppliedCandidates = asyncHandler(async (req, res) => {
     try {
-        const applications = await Application.find().populate({ placement_id: "placement_id", user_id: "user_id" });
-        res.status(200).json(new ApiResponse(200, applications, ""));
+        const appliedCandidates = await Application.find({status: "applied"}).populate({ placement_id: "placement_id", user_id: "user_id" });
+        res.status(200).json(new ApiResponse(200, appliedCandidates, ""));
     } catch (err) {
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
-export { applyForPlacement, appliedApllications, getAllAppliedApplication }
+const getSelectedCandidates = asyncHandler(async(req, res)=>{
+    try {
+        const selectedCandidates = await Application.find({status: "selected"}).populate({ placement_id: "placement_id", user_id: "user_id" });
+        res.status(200).json(new ApiResponse(200, selectedCandidates, ""));
+    } catch (error) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+
+const getShortlistedCandidates = asyncHandler(async(req, res)=>{
+    try {
+        const shortlistedCandidates = await Application.find({status: "shortlisted"}).populate({ placement_id: "placement_id", user_id: "user_id" });
+        res.status(200).json(new ApiResponse(200, shortlistedCandidates, ""));
+    } catch (error) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+
+const getRejectedCandidates = asyncHandler(async(req, res)=>{
+    try {
+        const rejectedCandidates = await Application.find({status: "rejected"}).populate({ placement_id: "placement_id", user_id: "user_id" });
+        res.status(200).json(new ApiResponse(200, rejectedCandidates, ""));
+    } catch (error) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+export { applyForPlacement, appliedApllication, getAppliedCandidates, getSelectedCandidates, getShortlistedCandidates, getRejectedCandidates }

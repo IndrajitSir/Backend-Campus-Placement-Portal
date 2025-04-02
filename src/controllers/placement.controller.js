@@ -62,5 +62,6 @@ const updatePlacement = asyncHandler(async (req, res) => {
     } catch (error) {
         return res.status(500).json(new ApiError(500, "Server error"));
     }
-})
+});
+
 export { newPlacement, getAllPlacements, deletePlacement, updatePlacement }

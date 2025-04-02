@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import User from "../models/user.models.js";
-import Student from "../models/student.model.js";
+import { User } from "../models/user.models.js";
+import { Student } from "../models/student.model.js";
 const updateApproval = asyncHandler(async (req, res) => { // will be approved by admin
     try {
         const { studentDetails } = req.body;

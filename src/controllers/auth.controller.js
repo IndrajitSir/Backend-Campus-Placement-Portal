@@ -42,7 +42,7 @@ const register = asyncHandler(async (req, res) => {
             new ApiResponse(
                 200,
                 {
-                    user: loggedInUser, accessToken, refreshToken
+                    user: createdUser, accessToken, refreshToken
                 },
                 "User registered Successfully"
             )
@@ -108,7 +108,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
     const isSuperAdmin = existingAdmin ? false : true;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-        return res.status(400).json(new ApiError(400, "Admin already exists!"));
+        return res.status(400).json(new ApiError(400, "Email already exists!"));
     }
     const newAdmin = await User.create({
         name,
@@ -142,16 +142,16 @@ const registerAdmin = asyncHandler(async (req, res) => {
 });
 
 const loginAdmin = asyncHandler(async(req,res) => {
-    const { password, emailORphone } = req.body;
+    const { password, email } = req.body;
 
-    if (!emailORphone) {
+    if (!email) {
         return res.status(400).json(new ApiError(400, "Email or phone number is required"));
     }
     if (!password) {
         return res.status(400).json(new ApiError(400, "Password is required"));
     }
 
-    const admin = await User.findOne({$or: [{email: emailORphone}, {phoneNumber: emailORphone}]});
+    const admin = await User.findOne({email: email});
     if(!admin){
         return res.status(404).json(new ApiError(404, "Admin is not found!"));
     }

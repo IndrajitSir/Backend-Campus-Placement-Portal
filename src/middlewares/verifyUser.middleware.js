@@ -3,17 +3,21 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
 import jwt from "jsonwebtoken";
 
-const verifyUserWithRole = (roles) => asyncHandler(async (req, _, next) => {
+const verifyUserWithRole = (roles) => asyncHandler(async (req, res, next) => {
     try {
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
-
+        console.log("request arrived in roles");
+        console.log(`token: ${req.header("Authorization")} || ${req.cookies?.accessToken}`);
+        
+        
         if (!token) {
             return res.status(401).json(new ApiError(401, "Unauthorized request"))
         }
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
-
+        console.log(`Decoded Token: ${decodedToken} role: ${decodedToken.role}`);
+        
         if (!roles.includes(decodedToken.role)) {
             return res.status(403).json(new ApiError(403, "Access denied"))
         }
@@ -36,7 +40,7 @@ const verifyUser = asyncHandler(async (req, res, next) => {
         if (!token) {
             return res.status(401).json(new ApiError(401, "Unauthorized request"))
         }
-
+        console.log("request arrived");
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
 

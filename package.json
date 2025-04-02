@@ -27,6 +27,7 @@
     "passport-linkedin-oauth2": "^2.0.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.3"
   }

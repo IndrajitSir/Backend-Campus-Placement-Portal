@@ -26,6 +26,7 @@ import applicationRoutes from "./routes/application.route.js"
 import userRoutes from "./routes/user.route.js"
 import adminRoutes from "./routes/admin.route.js"
 import studentRoutes from "./routes/student.route.js"
+import fakeDataRouter from "./fakedata/fakeData.js"
 //routes declaration
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/auth", authRoutes);
@@ -34,4 +35,5 @@ app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1/users",userRoutes);
 app.use("/api/v1/admin",adminRoutes);
 app.use("/api/v1/student",studentRoutes);
+app.use("/api/v1/fake-data",fakeDataRouter);
 export { app }

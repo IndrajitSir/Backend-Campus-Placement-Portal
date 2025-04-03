@@ -3,8 +3,10 @@ import { options } from "../constants.js";
 import { generateAccessAndRefreshTokens } from "../utils/generateToken.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import {ApiResponse} from "../utils/ApiResponse.js"
 const logoutUser = asyncHandler(async (req, res) => {
     try {
+        console.log("User logged Out"); 
         await User.findByIdAndUpdate(
             req.user._id,
             {
@@ -113,18 +115,14 @@ const updatePhoneNumber = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-    try {
+        console.log("returning response");
         return res
             .status(200)
             .json(new ApiResponse(
                 200,
-                req.user,
+                {user:req.user, accessToken: req.cookies.accessToken, refreshToken: req.cookies.refreshToken},
                 "User fetched successfully"
             ))
-    }
-    catch (err) {
-        return res.status(500).json(new ApiError(500, "Server error"));
-    }
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -195,4 +193,13 @@ const changeCurrentEmail = asyncHandler(async (req, res) => {
     }
 });
 
-export { logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, changeCurrentName, changeCurrentEmail, updatePhoneNumber }
+export { 
+    logoutUser, 
+    refreshAccessToken, 
+    changeCurrentPassword, 
+    getCurrentUser, 
+    updateAccountDetails, 
+    changeCurrentName, 
+    changeCurrentEmail, 
+    updatePhoneNumber, 
+}

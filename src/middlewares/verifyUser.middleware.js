@@ -14,8 +14,8 @@ const verifyUserWithRole = (roles) => asyncHandler(async (req, res, next) => {
         }
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
-        console.log(`Decoded Token: ${decodedToken} role: ${decodedToken.role}`);
+        const user = await User.findById(decodedToken?._id);
+        console.log(`Decoded Token: ${JSON.stringify(decodedToken)} role: ${decodedToken.role}`);
         
         if (!roles.includes(decodedToken.role)) {
             return res.status(403).json(new ApiError(403, "Access denied"))
@@ -41,7 +41,7 @@ const verifyUser = asyncHandler(async (req, res, next) => {
         }
         console.log("request arrived in non role auth");
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+        const user = await User.findById(decodedToken?._id);
         console.log("Token verified");
         
         if (!user) {

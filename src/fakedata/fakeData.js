@@ -16,7 +16,7 @@ async function generateFakePlacements(req, res) {
             _id: placement_staff_Id,
             name: faker.person.fullName(),
             email: faker.internet.email(),
-            password: faker.internet.password(), // In real-world, hash this
+            password: 1234,
             phoneNumber: faker.phone.number().replace(/\D/g, '').slice(0, 10),
             role: faker.helpers.arrayElement(["placement_staff","admin"]),
             refreshToken: null,
@@ -65,7 +65,7 @@ async function generateFakeStudents(req,res) {
             _id: student_Id,
             name: faker.person.fullName(),
             email: faker.internet.email(),
-            password: faker.internet.password(), // In real-world, hash this
+            password: 1234,
             phoneNumber: faker.phone.number().replace(/\D/g, '').slice(0, 10),
             role: "student",
             refreshToken: null,

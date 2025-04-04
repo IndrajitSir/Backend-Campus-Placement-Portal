@@ -2,6 +2,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Placement } from "../models/placement.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { Schema } from "mongoose";
 
 const newPlacement = asyncHandler(async (req, res) => {
     try {
@@ -12,7 +13,7 @@ const newPlacement = asyncHandler(async (req, res) => {
 
         const newPlacement = await Placement.create({
             company_name, job_title, description, eligibility, location, last_date,
-            created_by: req.user._id
+            created_by: new Schema.Types.ObjectId(req.user._id)
         });
         return res
             .status(201)

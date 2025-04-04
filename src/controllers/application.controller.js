@@ -2,6 +2,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Application } from "../models/application.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { Placement } from "../models/placement.model.js";
+import { Schema } from "mongoose";
 
 const applyForPlacement = asyncHandler(async (req, res) => {
     try {
@@ -14,28 +16,29 @@ const applyForPlacement = asyncHandler(async (req, res) => {
             return res.status(400).json(new ApiError(400, "User ID is missing"));
         }
         const isApplied = await Application.findOne({
-            $and: [{ user_id: userID, placement_id: placementId, status: "applied" }]
+            $and: [{ user_id: userID }, { placement_id: placementId }, { status: "applied" }]
         });
         if (isApplied) {
             return res.status(409).json(new ApiResponse(409, {}, "Already Applied!"));
         }
         const application = await Application.create({
-            user_id: userID,
-            placement_id: placementId,
+            user_id: new Schema.Types.ObjectId(userID),
+            placement_id: new Schema.Types.ObjectId(placementId),
             status: "applied"
         });
-
-        return res.status(200)
-            .json(new ApiResponse(200, application, ""));
+        return res.status(200).json(new ApiResponse(200, application, ""));
     } catch (err) {
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
 const appliedApplication = asyncHandler(async (req, res) => {
-    console.log("searching applied post");
-    const applications = await Application.find({ user_id: req.user._id }).populate("placement_id");
-    console.log("sending applied post");
+    console.log("searching applied post"); //db["applications"].find({ user_id: ObjectId("67eecb7cf7e6b0c4d1bfd5a9") });
+    const dummyPlacement = await Placement.findById("2ee9bb9d6db1ba61e39a9255");//db["applications"].find({ placement_id: ObjectId("2ee9bb9d6db1ba61e39a9255") });
+    console.log(dummyPlacement); 
+    const applications = await Application.find({ user_id: req.user._id }).populate("placement_id").populate("user_id");
+    if (!applications) { return res.status(400).json(new ApiResponse(400, [], "No data found")); }
+    console.log("sending applied post", JSON.stringify(applications));
     return res.status(200).json(new ApiResponse(200, applications, ""));
 });
 
@@ -86,19 +89,19 @@ const updateStatus = asyncHandler(async (req, res) => {
         if (!newStatus) { return res.status(400).json(new ApiError(400, "New Status is missing!")); }
 
         const updatedStatus = await Application.findByIdAndUpdate({ user_id: student_id }, { status: newStatus }, { new: true });
-        if(!updatedStatus) { return res.status(400).json(400, "Error while updating status of student application!")}
+        if (!updatedStatus) { return res.status(400).json(400, "Error while updating status of student application!") }
         return res.status(200).json(new ApiResponse(200, updatedStatus, "Status updated  of student application!"))
     } catch (error) {
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
 
-export { 
-    applyForPlacement, 
-    appliedApplication, 
-    getAppliedCandidates, 
-    getSelectedCandidates, 
-    getShortlistedCandidates, 
-    getRejectedCandidates, 
-    updateStatus, 
+export {
+    applyForPlacement,
+    appliedApplication,
+    getAppliedCandidates,
+    getSelectedCandidates,
+    getShortlistedCandidates,
+    getRejectedCandidates,
+    updateStatus,
 }

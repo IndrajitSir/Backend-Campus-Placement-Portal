@@ -1,4 +1,4 @@
-import {mongoose, Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const placementSchema = new Schema({
     company_name: { type: String, required: true },
@@ -10,4 +10,8 @@ const placementSchema = new Schema({
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true }
 }, { timestamps: true });
 
+placementSchema.pre("save", async function (next) {
+  this.created_by = new Schema.Types.ObjectId(this.created_by);
+  next()
+})
 export const Placement = mongoose.model("Placement", placementSchema);

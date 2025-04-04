@@ -12,17 +12,13 @@ const uploadResume = asyncHandler(async (req, res) => {
 
     const uploadedResume = await uploadOnCloudinary(resumeLocalPath);
 
-    const student = await Student.create({
-        student_id: req.user._id,
-        resume: uploadedResume.url
-    });
+    const student = await Student.findByIdAndUpdate(req.user._id, { resume: uploadedResume.url }, { new: true });
 
-    const response = await Student.findById(student._id);
-    if (!response) {
+    if (!student) {
         return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
     }
     return res.status(201)
-        .json(new ApiResponse(201, response, "Resume uploaded successfully!"))
+        .json(new ApiResponse(201, student, "Resume uploaded successfully!"))
 });
 
 const updateResume = asyncHandler(async (req, res) => {
@@ -53,7 +49,7 @@ const deleteResume = asyncHandler(async (req, res) => {
 
     await deleteFromCloudinary(student.resume);
 
-    const response = await Student.findOneAndDelete({ student_id: req.user._id }, { $set: { resume: null } }, { returnNewDocument: true });
+    const response = await Student.findOneAndDelete({ student_id: req.user._id }, { $set: { resume: null } }, { new: true });
 
     if (!response) {
         return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
@@ -256,19 +252,19 @@ const updateApproval = asyncHandler(async (req, res) => { // will be approved by
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
-export { 
-    uploadResume, 
-    updateResume, 
-    deleteResume, 
-    getAllStudents, 
-    getOneStudent, 
-    updateLocation, 
-    updateAbout, 
-    updateProfessionalSkill, 
-    updateDepartment, 
-    addNewProject, 
-    updateProject, 
-    deleteProject, 
+export {
+    uploadResume,
+    updateResume,
+    deleteResume,
+    getAllStudents,
+    getOneStudent,
+    updateLocation,
+    updateAbout,
+    updateProfessionalSkill,
+    updateDepartment,
+    addNewProject,
+    updateProject,
+    deleteProject,
     getProjects,
     updateApproval, // use in admin route
- }
+}

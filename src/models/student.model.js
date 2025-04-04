@@ -1,4 +1,4 @@
-import { mongoose, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const studentSchema = new Schema(
     {
@@ -26,5 +26,8 @@ const studentSchema = new Schema(
         }]
     }, { timestamps: true }
 );
-
+studentSchema.pre("save", async function (next) {
+  this.student_id = new Schema.Types.ObjectId(this.student_id);
+  next()
+})
 export const Student = mongoose.model("Student", studentSchema);

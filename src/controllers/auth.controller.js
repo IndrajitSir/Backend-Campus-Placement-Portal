@@ -5,6 +5,7 @@ import { User } from "../models/user.models.js";
 import { Student } from "../models/student.model.js";
 import { options } from "../constants.js";
 import { generateAccessAndRefreshTokens } from "../utils/generateToken.js";
+import { Schema } from "mongoose";
 // curl -X POST http://localhost:6005/api/v1/auth/register -H "Content-Type:application/json" -d '{"name": "indra", "email": "indrajitmandal779@gmail.com", "password": 12345, "role": "student"}'
 const register = asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
@@ -27,7 +28,7 @@ const register = asyncHandler(async (req, res) => {
 
     const user = await User.create({ name, email, password, role });
     if (role === "student") {
-        await Student.create({ student_id: user._id });
+        await Student.create({ student_id: new Schema.Types.ObjectId(user._id) });
     }
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user);
 
@@ -121,9 +122,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
         role: isSuperAdmin ? "super_admin" : "admin"
     });
 
-    const createdAdmin = await User.findById(newAdmin._id).select(
-        "-password -refreshToken"
-    )
+    const createdAdmin = await User.findById(newAdmin._id).select("-password -refreshToken")
     if (!createdAdmin) {
         return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"))
     }

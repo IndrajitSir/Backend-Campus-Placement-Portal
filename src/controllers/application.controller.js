@@ -16,19 +16,24 @@ const applyForPlacement = asyncHandler(async (req, res) => {
             return res.status(400).json(new ApiError(400, "User ID is missing"));
         }
         const isApplied = await Application.findOne({
-            $and: [{ user_id: userID }, { placement_id: placementId }, { status: "applied" }]
+            $and: [{ user_id: userID, placement_id: placementId, status: "applied" }]
         });
         if (isApplied) {
             return res.status(409).json(new ApiResponse(409, {}, "Already Applied!"));
         }
+        console.log("user not applied before");
+        
         const application = await Application.create({
-            user_id: new Schema.Types.ObjectId(userID),
-            placement_id: new Schema.Types.ObjectId(placementId),
+            user_id: userID,
+            placement_id: placementId,
             status: "applied"
         });
+        console.log("sending the response");
+        
         return res.status(200).json(new ApiResponse(200, application, ""));
     } catch (err) {
-        return res.status(500).json(new ApiError(500, "Server error"));
+        console.log(`error: ${err}`);       
+        return res.status(500).json(new ApiError(500, `Server error: ${err}`));
     }
 });
 

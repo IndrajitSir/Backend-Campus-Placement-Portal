@@ -39,8 +39,8 @@ async function generateFakePlacements(req, res) {
                     "MBA, BBA with relevant skills",
                     "Any graduate with programming knowledge"
                 ]),
-                location: faker.location.arrayElement([
-                    "Bengaluru", "chennai", "Hydrabad", "Kolkata", "Gurgaon", "Jaipur", "US", "UK", "Ireland", "Maxico", "Goa", "Pune"
+                location: faker.helpers.arrayElement([
+                    "Bengaluru", "chennai", "Hydrabad", "Kolkata", "Chandigarh", "Jaipur", "US", "UK", "Ireland", "Maxico", "Goa", "Pune"
                 ]),
                 last_date: faker.date.future(),
                 created_by: placement_staff_Id, // Link to the placement staff
@@ -73,7 +73,7 @@ async function generateFakeStudents(req,res) {
             updatedAt: faker.date.recent()
         });
 
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < 10; i++) {
             studentDetails.push({
               student_id: student_Id,
               resume: faker.internet.url(),

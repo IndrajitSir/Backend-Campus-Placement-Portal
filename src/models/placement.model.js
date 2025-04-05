@@ -11,7 +11,9 @@ const placementSchema = new Schema({
 }, { timestamps: true });
 
 placementSchema.pre("save", async function (next) {
-  this.created_by = new Schema.Types.ObjectId(this.created_by);
+  if (typeof this.created_by === "string"){
+    this.created_by = new Schema.Types.ObjectId(this.created_by);
+  }
   next()
 })
 export const Placement = mongoose.model("Placement", placementSchema);

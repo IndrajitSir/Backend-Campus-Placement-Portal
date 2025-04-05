@@ -7,8 +7,12 @@ const applicationSchema = new Schema({
 }, { timestamps: true });
 
 applicationSchema.pre("save", async function (next) {
-  this.user_id = new Schema.Types.ObjectId(this.user_id);
-  this.placement_id = new Schema.Types.ObjectId(this.placement_id);
+  if (typeof this.user_id === "string"){
+    this.user_id = new Schema.Types.ObjectId(this.user_id);
+  }
+  if (typeof this.placement_id === "string"){
+    this.placement_id = new Schema.Types.ObjectId(this.placement_id);
+  }
   next()
 })
 export const Application = mongoose.model("Application", applicationSchema);

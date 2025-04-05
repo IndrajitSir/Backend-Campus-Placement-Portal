@@ -8,9 +8,9 @@ router.use(verifyUser);
 router.route("/current-user").get(getCurrentUser);
 router.route("/logout").post(logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
-router.route("/update-password").patch(changeCurrentPassword);
-router.route("/update-account").patch(updateAccountDetails);
-router.route("/update-name").patch(changeCurrentName);
-router.route("/update-email").patch(changeCurrentEmail);
-router.route("/update-phoneNumber").patch(updatePhoneNumber);
+router.route("/update-password").put(changeCurrentPassword);
+router.route("/update-account").put(updateAccountDetails);
+router.route("/update-name").put(changeCurrentName);
+router.route("/update-email").put(changeCurrentEmail);
+router.route("/update-phoneNumber").put(updatePhoneNumber);
 export default router

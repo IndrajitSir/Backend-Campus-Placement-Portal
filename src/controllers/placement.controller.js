@@ -13,7 +13,7 @@ const newPlacement = asyncHandler(async (req, res) => {
 
         const newPlacement = await Placement.create({
             company_name, job_title, description, eligibility, location, last_date,
-            created_by: new Schema.Types.ObjectId(req.user._id)
+            created_by: req.user._id
         });
         return res
             .status(201)

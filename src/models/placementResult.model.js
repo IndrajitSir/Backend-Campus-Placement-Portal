@@ -7,8 +7,12 @@ const placementResultSchema = new Schema({
 }, { timestamps: true });
 
 placementResultSchema.pre("save", async function (next) {
-  this.student_id = new Schema.Types.ObjectId(this.student_id);
-  this.placement_id = new Schema.Types.ObjectId(this.placement_id);
+  if (typeof this.student_id === "string") {
+    this.student_id = new Schema.Types.ObjectId(this.student_id);
+  }
+  if (typeof this.placement_id === "string") {
+    this.placement_id = new Schema.Types.ObjectId(this.placement_id);
+  }
   next()
 })
 export const PlacementResult = mongoose.model("PlacementResult", placementResultSchema);

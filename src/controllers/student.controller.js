@@ -252,6 +252,35 @@ const updateApproval = asyncHandler(async (req, res) => { // will be approved by
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
+
+const uploadAvatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+
+    if (!avatarLocalPath) return res.status(401).json(new ApiError(401, "Avatar is missing!"));
+
+    const student = await Student.find({ student_id: req.user._id });
+
+    if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
+    if (student.avatar === "") {
+        const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
+        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { avatar: uploadedAvatar.url } }, { new: true });
+        if (!response) {
+            return res.status(500).json(new ApiError(500, "Something went wrong while uploading the Avatar!"))
+        }
+        return res.status(200)
+            .json(new ApiResponse(200, response, "Avatar updated successfully!"))
+    }
+    await deleteFromCloudinary(student.avatar);
+    const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
+
+    const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedAvatar.url } }, { new: true });
+
+    if (!response) {
+        return res.status(500).json(new ApiError(500, "Something went wrong while uploading the Avatar!"))
+    }
+    return res.status(200)
+        .json(new ApiResponse(200, response, "Avatar updated successfully!"))
+});
 export {
     uploadResume,
     updateResume,
@@ -267,4 +296,5 @@ export {
     deleteProject,
     getProjects,
     updateApproval, // use in admin route
+    uploadAvatar
 }

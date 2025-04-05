@@ -3,10 +3,11 @@ import { options } from "../constants.js";
 import { generateAccessAndRefreshTokens } from "../utils/generateToken.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import {ApiResponse} from "../utils/ApiResponse.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { Student } from "../models/student.model.js"
 const logoutUser = asyncHandler(async (req, res) => {
     try {
-        console.log("User logged Out"); 
+        console.log("User logged Out");
         await User.findByIdAndUpdate(
             req.user._id,
             {
@@ -115,14 +116,17 @@ const updatePhoneNumber = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-        console.log("returning response");
-        return res
-            .status(200)
-            .json(new ApiResponse(
-                200,
-                {user:req.user, accessToken: req.cookies.accessToken, refreshToken: req.cookies.refreshToken},
-                "User fetched successfully"
-            ))
+    console.log("returning response");
+    if (req.user.role === "student") {
+        const student = await Student.findOne({student_id: req.user._id});
+        console.log(`current user: ${student}`);       
+        return res.status(200).json(new ApiResponse(200,
+            { user: req.user, accessToken: req.cookies.accessToken, refreshToken: req.cookies.refreshToken, student: student },
+            "User fetched successfully"));
+    }
+    return res.status(200).json(new ApiResponse(200,
+        { user: req.user, accessToken: req.cookies.accessToken, refreshToken: req.cookies.refreshToken },
+        "User fetched successfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -193,13 +197,13 @@ const changeCurrentEmail = asyncHandler(async (req, res) => {
     }
 });
 
-export { 
-    logoutUser, 
-    refreshAccessToken, 
-    changeCurrentPassword, 
-    getCurrentUser, 
-    updateAccountDetails, 
-    changeCurrentName, 
-    changeCurrentEmail, 
-    updatePhoneNumber, 
+export {
+    logoutUser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails,
+    changeCurrentName,
+    changeCurrentEmail,
+    updatePhoneNumber,
 }

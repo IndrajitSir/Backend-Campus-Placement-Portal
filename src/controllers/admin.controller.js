@@ -2,7 +2,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { Student } from "../models/student.model.js";
-import { Schema } from "mongoose";
 
 const createNewStudent = asyncHandler(async (req, res) => {
     const { name, email, password, phone } = req.body;
@@ -21,7 +20,7 @@ const createNewStudent = asyncHandler(async (req, res) => {
     if (existedStudent) return res.status(409).json(new ApiError(409, "Student already exists"));
 
     const student = await User.create({ name, email, password, role: "student", phoneNumber: phone });
-    await Student.create({ student_id: new Schema.Types.ObjectId(student._id) });
+    await Student.create({ student_id: student._id });
 
     const createdStudent = await User.findById(student._id).select(
         "-password -refreshToken"

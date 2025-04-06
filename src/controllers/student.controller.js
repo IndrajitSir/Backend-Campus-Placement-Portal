@@ -10,36 +10,28 @@ const uploadResume = asyncHandler(async (req, res) => {
 
     if (!resumeLocalPath) return res.status(401).json(new ApiError(401, "Resume is missing!"));
 
-    const uploadedResume = await uploadOnCloudinary(resumeLocalPath);
-
-    const student = await Student.findByIdAndUpdate(req.user._id, { resume: uploadedResume.url }, { new: true });
-
-    if (!student) {
-        return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
-    }
-    return res.status(201)
-        .json(new ApiResponse(201, student, "Resume uploaded successfully!"))
-});
-
-const updateResume = asyncHandler(async (req, res) => {
-    const newResumeLocalPath = req.files?.newResume[0]?.path;
-
-    if (!newResumeLocalPath) return res.status(401).json(new ApiError(401, "Resume is missing!"));
-
     const student = await Student.find({ student_id: req.user._id });
 
     if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
-
+    if (student.resume === "") {
+        const uploadedResume = await uploadOnCloudinary(resumeLocalPath);
+        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedResume.url } }, { new: true });
+        if (!response) {
+            return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
+        }
+        return res.status(200)
+            .json(new ApiResponse(200, response, "Resume updated successfully!"))
+    }
     await deleteFromCloudinary(student.resume);
-    const uploadedNewResume = await uploadOnCloudinary(newResumeLocalPath);
+    const uploadedResume = await uploadOnCloudinary(resumeLocalPath);
 
-    const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedNewResume.url } }, { returnNewDocument: true });
+    const response = await Student.findByIdAndUpdate(req.user._id, { resume: uploadedResume.url }, { new: true });
 
     if (!response) {
         return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
     }
     return res.status(201)
-        .json(new ApiResponse(201, response, "Resume updated successfully!"))
+        .json(new ApiResponse(201, response, "Resume uploaded successfully!"))
 });
 
 const deleteResume = asyncHandler(async (req, res) => {
@@ -47,6 +39,9 @@ const deleteResume = asyncHandler(async (req, res) => {
 
     if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
 
+    if (student.resume === "") {
+        return res.status(404).json(new ApiResponse(404, {}, "Resume is Unavailable!"))
+    }
     await deleteFromCloudinary(student.resume);
 
     const response = await Student.findOneAndDelete({ student_id: req.user._id }, { $set: { resume: null } }, { new: true });
@@ -60,7 +55,7 @@ const deleteResume = asyncHandler(async (req, res) => {
 
 const getAllStudents = asyncHandler(async (req, res) => {
     try {
-        const students = await Student.find();
+        const students = await Student.find().populate("student_id");
         if (!students || students.length === 0) {
             const studentsFromUserDocument = await User.find({ role: "student" });
             if (!studentsFromUserDocument) {
@@ -283,7 +278,6 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 });
 export {
     uploadResume,
-    updateResume,
     deleteResume,
     getAllStudents,
     getOneStudent,

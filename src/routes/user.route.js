@@ -1,5 +1,15 @@
 import { Router } from 'express';
-import { logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, changeCurrentName, changeCurrentEmail, updatePhoneNumber } from "../controllers/user.controller.js";
+import { logoutUser, 
+    refreshAccessToken, 
+    changeCurrentPassword, 
+    getCurrentUser, 
+    updateAccountDetails, 
+    changeCurrentName, 
+    changeCurrentEmail, 
+    updatePhoneNumber,
+    getAllPlacementStaffs,
+    getAllAdmins
+ } from "../controllers/user.controller.js";
 import { verifyUser } from '../middlewares/verifyUser.middleware.js';
 const router = Router();
 
@@ -13,4 +23,6 @@ router.route("/update-account").put(updateAccountDetails);
 router.route("/update-name").put(changeCurrentName);
 router.route("/update-email").put(changeCurrentEmail);
 router.route("/update-phoneNumber").put(updatePhoneNumber);
+router.route("/placement-staff-all").get(getAllPlacementStaffs);
+router.route("/admin-all").get(getAllAdmins);
 export default router

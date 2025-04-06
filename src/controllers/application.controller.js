@@ -3,7 +3,6 @@ import { Application } from "../models/application.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Placement } from "../models/placement.model.js";
-import { Schema } from "mongoose";
 
 const applyForPlacement = asyncHandler(async (req, res) => {
     try {
@@ -29,10 +28,10 @@ const applyForPlacement = asyncHandler(async (req, res) => {
             status: "applied"
         });
         console.log("sending the response");
-        
+        logger.info(`User ${req.user._id} applied to placement ${placementId}`);
         return res.status(200).json(new ApiResponse(200, application, ""));
     } catch (err) {
-        console.log(`error: ${err}`);       
+        logger.error(`Error in applying placement: ${err.message}`, { stack: err.stack });    
         return res.status(500).json(new ApiError(500, `Server error: ${err}`));
     }
 });

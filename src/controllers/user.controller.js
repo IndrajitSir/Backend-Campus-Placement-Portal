@@ -197,6 +197,23 @@ const changeCurrentEmail = asyncHandler(async (req, res) => {
     }
 });
 
+const getAllPlacementStaffs = asyncHandler(async(req,res)=>{
+    try {
+        const placementStaffs = await User.find({role: "placement_staff"});
+        return res.status(200).json(new ApiResponse(200, placementStaffs, "Placement Staffs fetched successfully"))
+    } catch (error) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+
+const getAllAdmins = asyncHandler(async(req,res)=>{
+    try {
+        const admins = await User.find({role: "admin"});
+        return res.status(200).json(new ApiResponse(200, admins, "Admins fetched successfully"))
+    } catch (error) {
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
 export {
     logoutUser,
     refreshAccessToken,
@@ -206,4 +223,6 @@ export {
     changeCurrentName,
     changeCurrentEmail,
     updatePhoneNumber,
+    getAllPlacementStaffs,
+    getAllAdmins
 }

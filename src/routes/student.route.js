@@ -4,7 +4,6 @@ import {
     deleteResume, 
     getAllStudents, 
     getOneStudent, 
-    updateResume, 
     uploadResume, 
     updateLocation, 
     updateAbout, 
@@ -18,8 +17,7 @@ import {
 import { verifyUserWithRole } from '../middlewares/verifyUser.middleware.js';
 const router = Router();
 
-router.route("/upload-resume").post(upload.fields({name: "resume", maxCount: 1}), verifyUserWithRole(["student"]), uploadResume);
-router.route("/update-resume").put(upload.fields({name: "newResume", maxCount: 1}), verifyUserWithRole(["student"]), updateResume);
+router.route("/upload-resume").put(upload.fields({name: "resume", maxCount: 1}), verifyUserWithRole(["student"]), uploadResume);
 router.route("/delete-resume").delete(verifyUserWithRole(["student"]), deleteResume);
 router.route("/all").get(verifyUserWithRole(["placement_staff", "super_admin", "admin"]), getAllStudents);
 router.route("/").get(verifyUserWithRole(["placement_staff", "super_admin", "admin"]), getOneStudent);
@@ -32,5 +30,5 @@ router.route("/add-project").post(verifyUserWithRole(["student"]), addNewProject
 router.route("/update-project").put(verifyUserWithRole(["student"]), updateProject);
 router.route("/delete-project").delete(verifyUserWithRole(["student"]), deleteProject);
 router.route("/get-project").put(verifyUserWithRole(["placement_staff", "super_admin", "admin"]), getProjects);
-router.route("/upload-avatar").post(upload.fields({name: "avatar", maxCount: 1}), verifyUserWithRole(["student"]), uploadAvatar);
+router.route("/upload-avatar").put(upload.fields({name: "avatar", maxCount: 1}), verifyUserWithRole(["student"]), uploadAvatar);
 export default router;

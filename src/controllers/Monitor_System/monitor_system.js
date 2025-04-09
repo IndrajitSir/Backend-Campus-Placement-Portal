@@ -1,5 +1,5 @@
 import os from "os";
-import { asyncHandler } from "../../utils/asyncHandler";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const systemStatus = asyncHandler((req, res) => {
     const uptime = os.uptime();

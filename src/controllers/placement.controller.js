@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Placement } from "../models/placement.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import logger from "../utils/Logger/logger.js";
+import redis from "../utils/redisClient.js";
 
 const newPlacement = asyncHandler(async (req, res) => {
     const { company_name, job_title, description, eligibility, location, last_date } = req.body;
@@ -29,12 +30,18 @@ const newPlacement = asyncHandler(async (req, res) => {
 });
 
 const getAllPlacements = asyncHandler(async (req, res) => {
+    const cacheKey = "placement:all";
     try {
-        const placements = await Placement.find();
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All placement posts fetched from cache!"));
+        }
+        const placements = await Placement.find().lean();
         if (!Array.isArray(placements) && !placements.length > 0) {
             logger.info("There is no placement post!!");
             return res.status(204).json(new ApiError(204, "No placement post found!"))
         }
+        await redis.set(cacheKey, JSON.stringify(placements), "EX", 600);
         return res.status(200).json(new ApiResponse(200, placements, "All placement posts fetched!"));
     } catch (err) {
         logger.error(`Error in get all placements: ${err.message}`, { stack: err.stack });

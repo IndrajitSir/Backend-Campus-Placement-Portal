@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import logger from "../utils/Logger/logger.js";
+import redis from "../utils/redisClient.js";
 
 const uploadResume = asyncHandler(async (req, res) => {
     console.log(`resume: ${req.files?.resume} and resume[0]: ${req.files?.resume[0]}`);
@@ -76,7 +77,12 @@ const deleteResume = asyncHandler(async (req, res) => {
 });
 
 const getAllStudents = asyncHandler(async (req, res) => {
+    const cacheKey = "students:all";
     try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All students fetched from cache!"));
+        }
         const students = await Student.find().populate("student_id");
         if (!students || students.length === 0) {
             const studentsFromUserDocument = await User.find({ role: "student" });
@@ -87,6 +93,7 @@ const getAllStudents = asyncHandler(async (req, res) => {
             logger.info("Fetched all students, Returning all students data!")
             return res.status(200).json(new ApiResponse(200, studentsFromUserDocument, ""));
         }
+        await redis.set(cacheKey, JSON.stringify(students), "EX", 600);
         return res.status(200).json(new ApiResponse(200, students, ""));
     } catch (err) {
         logger.error(`Error while fetching all students: ${err.message}`, { stack: err.stack });

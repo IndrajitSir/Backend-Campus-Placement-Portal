@@ -29,6 +29,9 @@ const studentSchema = new Schema(
     }, { timestamps: true }
 );
 
+studentSchema.index({approved: 1});
+studentSchema.index({department: 1});
+
 function removeCache(){
   redis.exists("students:all", (err, reply) => {
     if (err) {

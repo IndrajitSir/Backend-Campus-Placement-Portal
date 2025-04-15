@@ -10,7 +10,10 @@ const userSchema = new Schema(
         role: { type: String, enum: ["super_admin", "admin", "placement_staff", "student"], required: true },
         refreshToken: { type: String, default: null }
     }, { timestamps: true }
-)
+);
+
+userSchema.index({email: 1});
+userSchema.index({role: 1});
 
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();

@@ -11,6 +11,8 @@ const placementSchema = new Schema({
   created_by: { type: Schema.Types.ObjectId, ref: "User", required: true }
 }, { timestamps: true });
 
+placementSchema.index({created_by: 1});
+
 function removeCache(){
   redis.exists("placement:all", (err, reply) => {
     if (err) {

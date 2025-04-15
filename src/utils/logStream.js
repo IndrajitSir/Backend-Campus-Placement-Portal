@@ -23,7 +23,7 @@ export const streamLogs = (io) => {
     });
 
     stream.on("end", () => {
-      io.emit("log:update", data.split("\n").filter(Boolean).slice(-10)); // Send last 10 lines
+      io.to("admin-room").emit("log:update", data.split("\n").filter(Boolean).slice(-10)); // Send last 10 lines
     });
   });
 };

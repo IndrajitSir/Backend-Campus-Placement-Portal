@@ -18,7 +18,13 @@ const io = new Server(httpServer, {
   }
 });
 io.on("connection", (socket) => {
-  console.log("Client connected: ", socket.id);
+  const role = socket.handshake.query.role;
+  if(role==="admin" || role==="super_admin"){
+    socket.join("admin-room");
+    console.log("Admin connected: ", socket.id);
+  }else{
+    console.log("Client (Non-Admin) connected: ", socket.id);
+  }
   socket.on("disconnect", () => {
     console.log("client disconnected: ", socket.id);
   })

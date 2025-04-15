@@ -102,7 +102,7 @@ const updatePhoneNumber = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     try {
-        console.log("returning response");
+        console.log("returning current user");
         if (req.user.role === "student") {
             const student = await Student.findOne({ student_id: req.user._id });
             console.log(`current user: ${student}`);

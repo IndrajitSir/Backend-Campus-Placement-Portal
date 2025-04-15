@@ -5,9 +5,25 @@ import passport from "./config/passport.js"
 import session from 'express-session';
 import morgan from "morgan";
 import logger from "./utils/Logger/logger.js";
-
+import { createServer } from "node:http";
+import { Server } from "socket.io"
+import { streamLogs } from "./utils/logStream.js";
 const app = express();
+const httpServer = createServer(app);
 
+const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
+io.on("connection", (socket) => {
+  console.log("Client connected: ", socket.id);
+  socket.on("disconnect", () => {
+    console.log("client disconnected: ", socket.id);
+  })
+});
+streamLogs(io);
 app.use(cors({
   origin: "http://localhost:5173",
   credentials: true
@@ -66,4 +82,4 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/student", studentRoutes);
 app.use("/api/v1/fake-data", fakeDataRouter);
 app.use("/api/v1/system", monitorSystem);
-export { app }
+export { app, httpServer }

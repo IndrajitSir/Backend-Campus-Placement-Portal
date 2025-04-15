@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import redis from "../utils/redisClient";
+import redis from "../utils/redisClient.js";
 
 const placementSchema = new Schema({
   company_name: { type: String, required: true },

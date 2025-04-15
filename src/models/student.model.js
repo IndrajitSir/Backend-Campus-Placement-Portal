@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import redis from "../utils/redisClient";
+import redis from "../utils/redisClient.js";
 
 const studentSchema = new Schema(
     {

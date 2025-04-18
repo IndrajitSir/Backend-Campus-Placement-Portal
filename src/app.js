@@ -7,6 +7,8 @@ import morgan from "morgan";
 import logger from "./utils/Logger/logger.js";
 import { createServer } from "node:http";
 import { Server } from "socket.io"
+import fs from "fs";
+import path from "path";
 import { streamLogs } from "./utils/logStream.js";
 const app = express();
 const httpServer = createServer(app);
@@ -19,10 +21,36 @@ const io = new Server(httpServer, {
 });
 io.on("connection", (socket) => {
   const role = socket.handshake.query.role;
-  if(role==="admin" || role==="super_admin"){
+  if (role === "admin" || role === "super_admin") {
     socket.join("admin-room");
     console.log("Admin connected: ", socket.id);
-  }else{
+    io.in("admin-room").fetchSockets().then(sockets => {
+      console.log("Sockets in admin-room:", sockets.map(s => s.id));
+    });
+    const logPath = path.join("logs", "combined.log");
+    try {
+      const stats = fs.statSync(logPath);
+      const startPos = Math.max(0, stats.size - 5000);
+      const stream = fs.createReadStream(logPath, {
+        encoding: "utf8",
+        start: startPos
+      });
+
+      let data = "";
+      stream.on("data", chunk => {
+        data += chunk;
+      });
+      stream.on("error", err => {
+        console.error("Error reading log file:", err);
+      });
+
+      stream.on("end", () => {
+        io.to("admin-room").emit("log:update", data.split("\n").filter(Boolean).slice(-10)); // Send last 10 lines
+      });
+    } catch (err) {
+      console.error("Failed to read logs on connect: ", err.message)
+    }
+  } else {
     console.log("Client (Non-Admin) connected: ", socket.id);
   }
   socket.on("disconnect", () => {

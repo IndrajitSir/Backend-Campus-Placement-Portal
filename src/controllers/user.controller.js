@@ -105,7 +105,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
         console.log("returning current user");
         if (req.user.role === "student") {
             const student = await Student.findOne({ student_id: req.user._id });
-            console.log(`current user: ${student}`);
             return res.status(200).json(new ApiResponse(200,
                 { user: req.user, accessToken: req.cookies.accessToken, refreshToken: req.cookies.refreshToken, student: student },
                 "User fetched successfully"));
@@ -216,6 +215,48 @@ const getAllAdmins = asyncHandler(async (req, res) => {
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });
+
+const getNonSuperAdminUsers = asyncHandler(async (req, res)=>{
+    try {
+        const users = await User.find({
+            role: { $ne: "super_admin"}
+        }, "name email");
+        if (!Array.isArray(users) && !users.length > 0) {
+            logger.info(`There is no users in the database!`);
+            return res.status(204).json(new ApiResponse(204, {}, "No users in the database"))
+        }
+        return res.status(200).json(new ApiResponse(200, users, "Fetched users(name, email) successfully"))
+    } catch (error) {
+        logger.error(`Error in get Non-Super Admin Users: ${error.message}`, { stack: error.stack });
+        return res.status(500).json(new ApiError(500, "Server error"));
+    }
+});
+
+const getOneUser = asyncHandler(async (req, res) => {
+    const nameOremail = req.params.nameOremail;
+    console.log(`params: ${req.params}`)
+    console.log(`name or email : ${nameOremail}`);
+    if (!nameOremail) return res.status(400).json(new ApiError(400, "value is missing"))
+    try {
+        const existedUser = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] })
+        if (!existedUser) {
+            logger.info(`User with ${nameOremail} does not exists in the database!`)
+            return res.status(409).json(new ApiError(409, "User does not exists"));
+        }
+        console.log(`Existed user: ${existedUser}`);
+        if(existedUser.role !== "student"){
+            logger.info(`Sending one user data in response! having Email or Name: ${nameOremail}`);
+            return res.status(200).json(new ApiResponse(200, existedUser, "User fetched successfully!"));
+        }
+        const student = await Student.findOne({ student_id: existedUser._id }).populate("student_id").select("-password -refreshToken");
+        logger.info(`Sending one user data in response! having Email or Name: ${nameOremail}`);
+        return res.status(200).json(new ApiResponse(200, student, ""));
+    } catch (error) {
+        logger.error(`Error in get one user : ${error.message}`, { stack: error.stack });
+        return res.status(500).json(new ApiError(500, `Server error`));
+    }
+});
+
 export {
     logoutUser,
     refreshAccessToken,
@@ -226,5 +267,7 @@ export {
     changeCurrentEmail,
     updatePhoneNumber,
     getAllPlacementStaffs,
-    getAllAdmins
+    getAllAdmins,
+    getNonSuperAdminUsers,
+    getOneUser
 }

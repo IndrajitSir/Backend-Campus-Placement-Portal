@@ -38,17 +38,14 @@ placementSchema.pre("save", async function (next) {
   next()
 });
 
-placementSchema.post("updateOne", async function (next) {
+placementSchema.post("updateOne", async function () {
   removeCache();
-  next()
 });
-placementSchema.post("deleteOne", async function(next){
+placementSchema.post("deleteOne", async function(){
   removeCache();
-  next()
 });
-placementSchema.post("save", async function(next){
+placementSchema.post("save", async function(){
   removeCache();
-  next()
 });
 
 export const Placement = mongoose.model("Placement", placementSchema);

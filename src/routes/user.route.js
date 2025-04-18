@@ -8,7 +8,9 @@ import { logoutUser,
     changeCurrentEmail, 
     updatePhoneNumber,
     getAllPlacementStaffs,
-    getAllAdmins
+    getAllAdmins,
+    getNonSuperAdminUsers,
+    getOneUser
  } from "../controllers/user.controller.js";
 import { verifyUser } from '../middlewares/verifyUser.middleware.js';
 const router = Router();
@@ -25,4 +27,6 @@ router.route("/update-email").put(changeCurrentEmail);
 router.route("/update-phoneNumber").put(updatePhoneNumber);
 router.route("/placement-staff-all").get(getAllPlacementStaffs);
 router.route("/admin-all").get(getAllAdmins);
+router.route("/all-users-nameAndEmail").get(getNonSuperAdminUsers);
+router.route("/one/:nameOremail").get(getOneUser);
 export default router

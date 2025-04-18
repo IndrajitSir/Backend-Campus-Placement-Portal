@@ -57,17 +57,14 @@ studentSchema.pre("save", async function (next) {
     next()
 });
 
-studentSchema.post("updateOne", async function (next) {
+studentSchema.post("updateOne", async function () {
   removeCache();
-  next()
 });
-studentSchema.post("deleteOne", async function(next){
+studentSchema.post("deleteOne", async function(){
   removeCache();
-  next()
 });
-studentSchema.post("save", async function(next){
+studentSchema.post("save", async function(){
   removeCache();
-  next()
 });
 
 export const Student = mongoose.model("Student", studentSchema);

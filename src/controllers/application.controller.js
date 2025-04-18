@@ -43,8 +43,7 @@ const applyForPlacement = asyncHandler(async (req, res) => {
 
 const appliedApplication = asyncHandler(async (req, res) => {
     console.log("searching applied post"); //db["applications"].find({ user_id: ObjectId("67eecb7cf7e6b0c4d1bfd5a9") });
-    const dummyPlacement = await Placement.findById("2ee9bb9d6db1ba61e39a9255");//db["applications"].find({ placement_id: ObjectId("2ee9bb9d6db1ba61e39a9255") });
-    console.log(dummyPlacement);
+    await Placement.findById("2ee9bb9d6db1ba61e39a9255");//db["applications"].find({ placement_id: ObjectId("2ee9bb9d6db1ba61e39a9255") });
     try {
         const applications = await Application.find({ user_id: req.user._id }).populate("placement_id").populate("user_id");
         if (!applications) { return res.status(400).json(new ApiResponse(400, [], "No data found")); }

@@ -83,9 +83,9 @@ const getAllStudents = asyncHandler(async (req, res) => {
         if (cached) {
             return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All students fetched from cache!"));
         }
-        const students = await Student.find().populate("student_id");
+        const students = await Student.find().populate("student_id").lean();
         if (!students || students.length === 0) {
-            const studentsFromUserDocument = await User.find({ role: "student" });
+            const studentsFromUserDocument = await User.find({ role: "student" }).lean();
             if (!studentsFromUserDocument) {
                 logger.info("Trying to get all students but No student found!")
                 return res.status(404).json(new ApiError(404, "No student found!"))
@@ -123,7 +123,7 @@ const updateLocation = asyncHandler(async (req, res) => {
     const { newLocation } = req.body;
     if (!newLocation) return res.status(400).json(new ApiError(400, "Location is missing"));
     try {
-        const updatedRecord = await Placement.findByIdAndUpdate(req.user._id, { location: newLocation }, { new: true });
+        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { location: newLocation }, { new: true });
         if (!updatedRecord) {
             logger.info("Error occured while User was trying to update his location!");
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating location"))
@@ -139,7 +139,7 @@ const updateAbout = asyncHandler(async (req, res) => {
     const { newAbout } = req.body;
     if (!newAbout) return res.status(400).json(new ApiError(400, "New About field is missing"));
     try {
-        const updatedRecord = await Placement.findByIdAndUpdate(req.user._id, { about: newAbout }, { new: true });
+        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { about: newAbout }, { new: true });
         if (!updatedRecord) {
             logger.info("Error occured while User was trying to update his about field!");
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating about field"))
@@ -155,7 +155,7 @@ const updateProfessionalSkill = asyncHandler(async (req, res) => {
     const { newProfessionalSkill } = req.body;
     if (!newProfessionalSkill) return res.status(400).json(new ApiError(400, "Professional Skill is missing"));
     try {
-        const updatedRecord = await Placement.findByIdAndUpdate(req.user._id, { professional_skill: newProfessionalSkill }, { new: true });
+        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { professional_skill: newProfessionalSkill }, { new: true });
         if (!updatedRecord) {
             logger.info("Error occured while User was trying to update his Professional Skill field!");
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating Professional Skill field"))
@@ -171,7 +171,7 @@ const updateDepartment = asyncHandler(async (req, res) => {
     const { newDepartment } = req.body;
     if (!newDepartment) return res.status(400).json(new ApiError(400, "Department value is missing"));
     try {
-        const updatedRecord = await Placement.findByIdAndUpdate(req.user._id, { department: newDepartment }, { new: true });
+        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { department: newDepartment }, { new: true });
         if (!updatedRecord) {
             logger.info("Error occured while User was trying to update his Department field!");
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating Department field"))
@@ -185,28 +185,31 @@ const updateDepartment = asyncHandler(async (req, res) => {
 
 const addNewProject = asyncHandler(async (req, res) => {
     const student_id = req.params.student_id;
-    const { title, description, link } = req.body;
+    const { projects } = req.body;
 
-    if (!student_id || !title || !description || !link) {
-        return res.status(400).json(new ApiError(400, "All fields are required!"));
-    }
-    try {
-        const student = await Student.findById(student_id);
-        if (!student) {
-            logger.info(`Student with the ID: ${student_id}, not found in the database, cannot add a new project!!`);
-            return res.status(404).json(new ApiError(404, "Student not found!"));
+    projects.forEach(async (project) => {
+        const { title, description, link } = project;
+        if (!student_id || !title || !description || !link) {
+            return res.status(400).json(new ApiError(400, "All fields are required!"));
         }
+        try {
+            const student = await Student.findById(student_id);
+            if (!student) {
+                logger.info(`Student with the ID: ${student_id}, not found in the database, cannot add a new project!!`);
+                return res.status(404).json(new ApiError(404, "Student not found!"));
+            }
 
-        student.projects.push({ title, description, link });
-        await student.save();
+            student.projects.push({ title, description, link });
+            await student.save();
 
-        const addedProject = student.projects[student.projects.length - 1];
+            const addedProject = student.projects[student.projects.length - 1];
 
-        return res.status(201).json(new ApiResponse(201, { project_id: addedProject._id, student }, "Project added successfully!"));
-    } catch (error) {
-        logger.error(`Error in add new project : ${error.message}`, { stack: error.stack });
-        return res.status(500).json(new ApiError(500, "Server error!"));
-    }
+            return res.status(201).json(new ApiResponse(201, { project_id: addedProject._id, student }, "Project added successfully!"));
+        } catch (error) {
+            logger.error(`Error in add new project : ${error.message}`, { stack: error.stack });
+            return res.status(500).json(new ApiError(500, "Server error!"));
+        }
+    });
 });
 
 const updateProject = asyncHandler(async (req, res) => {

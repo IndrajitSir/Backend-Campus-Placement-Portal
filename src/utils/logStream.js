@@ -12,14 +12,19 @@ export const streamLogs = (io) => {
   });
 
   watcher.on("change", () => {
+    const stats = fs.statSync(logPath);
+    const startPos = Math.max(0, stats.size - 5000);
     const stream = fs.createReadStream(logPath, {
       encoding: "utf8",
-      start: fs.statSync(logPath).size - 5000, // Read last 5KB
+      start: startPos
     });
 
     let data = "";
     stream.on("data", chunk => {
       data += chunk;
+    });
+    stream.on("error", err => {
+      console.error("Error reading log file:", err);
     });
 
     stream.on("end", () => {

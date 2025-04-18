@@ -15,7 +15,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
@@ -59,7 +59,7 @@ io.on("connection", (socket) => {
 });
 streamLogs(io);
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 app.use(morgan("combined", {
@@ -84,7 +84,7 @@ app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUniniti
 app.use(passport.initialize());
 app.use(passport.session());
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5173"); // Match frontend
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL); // Match frontend
   res.header("Access-Control-Allow-Credentials", 'true'); // Required for cookies
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");

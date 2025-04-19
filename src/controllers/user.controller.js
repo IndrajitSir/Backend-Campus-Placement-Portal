@@ -92,7 +92,7 @@ const updatePhoneNumber = asyncHandler(async (req, res) => {
         user.phoneNumber = phone
         await user.save({ validateBeforeSave: false })
 
-        return res.status(200).json(new ApiResponse(200, {}, "Phone number changed successfully"))
+        return res.status(200).json(new ApiResponse(200, {}, "Phone number updated successfully"))
     }
     catch (error) {
         logger.error(`Error in refresh access token : ${error.message}`, { stack: error.stack });
@@ -220,7 +220,7 @@ const getNonSuperAdminUsers = asyncHandler(async (req, res)=>{
     try {
         const users = await User.find({
             role: { $ne: "super_admin"}
-        }, "name email");
+        }, "name email role");
         if (!Array.isArray(users) && !users.length > 0) {
             logger.info(`There is no users in the database!`);
             return res.status(204).json(new ApiResponse(204, {}, "No users in the database"))
@@ -234,16 +234,13 @@ const getNonSuperAdminUsers = asyncHandler(async (req, res)=>{
 
 const getOneUser = asyncHandler(async (req, res) => {
     const nameOremail = req.params.nameOremail;
-    console.log(`params: ${req.params}`)
-    console.log(`name or email : ${nameOremail}`);
     if (!nameOremail) return res.status(400).json(new ApiError(400, "value is missing"))
     try {
-        const existedUser = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] })
+        const existedUser = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] }).select("-password -refreshToken:")
         if (!existedUser) {
             logger.info(`User with ${nameOremail} does not exists in the database!`)
             return res.status(409).json(new ApiError(409, "User does not exists"));
         }
-        console.log(`Existed user: ${existedUser}`);
         if(existedUser.role !== "student"){
             logger.info(`Sending one user data in response! having Email or Name: ${nameOremail}`);
             return res.status(200).json(new ApiResponse(200, existedUser, "User fetched successfully!"));

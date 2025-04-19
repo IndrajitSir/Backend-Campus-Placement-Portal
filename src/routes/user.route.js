@@ -28,5 +28,5 @@ router.route("/update-phoneNumber").put(updatePhoneNumber);
 router.route("/placement-staff-all").get(getAllPlacementStaffs);
 router.route("/admin-all").get(getAllAdmins);
 router.route("/all-users-nameAndEmail").get(getNonSuperAdminUsers);
-router.route("/one/:nameOremail").get(getOneUser);
+router.route("/one/:nameOremail(*)").get(getOneUser);
 export default router

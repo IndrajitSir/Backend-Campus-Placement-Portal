@@ -123,12 +123,12 @@ const updateLocation = asyncHandler(async (req, res) => {
     const { newLocation } = req.body;
     if (!newLocation) return res.status(400).json(new ApiError(400, "Location is missing"));
     try {
-        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { location: newLocation }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { location: newLocation }, { new: true });
         if (!updatedRecord) {
-            logger.info("Error occured while User was trying to update his location!");
+            logger.info(`Location update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating location"))
         }
-        return res.status(204).json(new ApiResponse(204, updatedRecord, "Location Updated"));
+        return res.status(200).json(new ApiResponse(200, updatedRecord, "Location Updated"));
     } catch (error) {
         logger.error(`Error in update location : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, "Server error"));
@@ -139,12 +139,12 @@ const updateAbout = asyncHandler(async (req, res) => {
     const { newAbout } = req.body;
     if (!newAbout) return res.status(400).json(new ApiError(400, "New About field is missing"));
     try {
-        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { about: newAbout }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { about: newAbout }, { new: true });
         if (!updatedRecord) {
-            logger.info("Error occured while User was trying to update his about field!");
+            logger.info(`About update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating about field"))
         }
-        return res.status(204).json(new ApiResponse(204, updatedRecord, "About field Updated"));
+        return res.status(200).json(new ApiResponse(200, updatedRecord, "About field Updated"));
     } catch (error) {
         logger.error(`Error in update about field : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, "Server error"));
@@ -155,12 +155,12 @@ const updateProfessionalSkill = asyncHandler(async (req, res) => {
     const { newProfessionalSkill } = req.body;
     if (!newProfessionalSkill) return res.status(400).json(new ApiError(400, "Professional Skill is missing"));
     try {
-        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { professional_skill: newProfessionalSkill }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { professional_skill: newProfessionalSkill }, { new: true });
         if (!updatedRecord) {
-            logger.info("Error occured while User was trying to update his Professional Skill field!");
+            logger.info(`Professional Skill update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating Professional Skill field"))
         }
-        return res.status(204).json(new ApiResponse(204, updatedRecord, "Professional Skill Updated"));
+        return res.status(200).json(new ApiResponse(200, updatedRecord, "Professional Skill Updated"));
     } catch (error) {
         logger.error(`Error in update Professional Skill field : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, "Server error"));
@@ -171,12 +171,12 @@ const updateDepartment = asyncHandler(async (req, res) => {
     const { newDepartment } = req.body;
     if (!newDepartment) return res.status(400).json(new ApiError(400, "Department value is missing"));
     try {
-        const updatedRecord = await Student.findByIdAndUpdate(req.user._id, { department: newDepartment }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { department: newDepartment }, { new: true });
         if (!updatedRecord) {
-            logger.info("Error occured while User was trying to update his Department field!");
+            logger.info(`Department update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating Department field"))
         }
-        return res.status(204).json(new ApiResponse(204, updatedRecord, "Department Updated"));
+        return res.status(200).json(new ApiResponse(200, updatedRecord, "Department Updated"));
     } catch (error) {
         logger.error(`Error in update Department field : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, "Server error"));

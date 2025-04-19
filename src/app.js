@@ -69,7 +69,6 @@ app.use(morgan("combined", {
 }));
 app.use((req, res, next) => {
   req.log = logger.child({
-    user: req.user?._id,
     ip: req.ip,
     route: req.originalUrl,
     method: req.method
@@ -106,6 +105,7 @@ import adminRoutes from "./routes/admin.route.js"
 import studentRoutes from "./routes/student.route.js"
 import fakeDataRouter from "./fakedata/fakeData.js"
 import monitorSystem from './routes/monitor_system.route.js'
+import SystemAnalytics from './routes/analytics.route.js'
 //routes declaration
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/auth", authRoutes);
@@ -116,4 +116,6 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/student", studentRoutes);
 app.use("/api/v1/fake-data", fakeDataRouter);
 app.use("/api/v1/system", monitorSystem);
+app.use("/api/v1/analytics", SystemAnalytics);
+
 export { app, httpServer }

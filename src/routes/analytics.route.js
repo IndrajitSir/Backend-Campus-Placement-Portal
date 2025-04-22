@@ -10,7 +10,10 @@ import {
     getResumeUploadStats,
     getStudentsByLocation,
     getStudentApprovalStats,
-    getTopActiveStudents
+    getTopActiveStudents,
+    totalUsersCount,
+    totalApplicationsCount,
+    totalPlacementsCount
 } from '../controllers/analytics.controller.js'
 
 const router = Router();
@@ -27,5 +30,8 @@ router.route("/resume-upload-statistics").get(getResumeUploadStats);
 router.route("/student-by-location").get(getStudentsByLocation);
 router.route("/student-approval-statistics").get(getStudentApprovalStats);
 router.route("/top-active-students").get(getTopActiveStudents);
+router.route("/total-users").get(totalUsersCount);
+router.route("/total-applications").get(totalApplicationsCount);
+router.route("/total-placements").get(totalPlacementsCount);
 
 export default router

@@ -116,7 +116,7 @@ const getSelectedStudentsPerDepartment = asyncHandler(async (req, res) => {
         }
     ]);
     logger.info("Successfully fetched Selected, Shortlisted, Rejected and Applied Students of each Department!");
-    return res.status(200).json(200, data, "Successfully fetched Selected, Shortlisted, Rejected and Applied Students of each Department!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched Selected, Shortlisted, Rejected and Applied Students of each Department!"));
 });
 
 const getPlacementsCreatedPerMonth = asyncHandler(async (req, res) => {
@@ -130,7 +130,7 @@ const getPlacementsCreatedPerMonth = asyncHandler(async (req, res) => {
         { $sort: { _id: 1 } }
     ]);
     logger.info("Successfully fetched how many placements have created per month!");
-    return res.status(200).json(200, data, "Successfully fetched how many placements have created per month!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched how many placements have created per month!"));
 });
 
 const getApplicationsPerPlacement = asyncHandler(async (req, res) => {
@@ -153,7 +153,7 @@ const getApplicationsPerPlacement = asyncHandler(async (req, res) => {
         }
     ]);
     logger.info("Successfully fetched number of applications per placement!");
-    return res.status(200).json(200, data, "Successfully fetched number of applications per placement!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched number of applications per placement!"));
 });
 
 const getApplicationStatusSummary = asyncHandler(async (req, res) => {
@@ -166,20 +166,20 @@ const getApplicationStatusSummary = asyncHandler(async (req, res) => {
         }
     ]);
     logger.info("Successfully fetched status summary of applications!");
-    return res.status(200).json(200, data, "Successfully fetched status summary of applications!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched status summary of applications!"));
 });
 
 const getResumeUploadStats = asyncHandler(async (req, res) => {
     const data = await Student.aggregate([
         {
             $group: {
-                _id: { hasResume: { $ne: ["$resume", ""] } },
+                _id: { $cond: [{ $ne: ["$resume", ""] }, "Has Resume", "No Resume"] },
                 count: { $sum: 1 }
             }
         }
     ]);
     logger.info("Successfully fetched how many users have their resumes!");
-    return res.status(200).json(200, data, "Successfully fetched how many users have their resumes!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched how many users have their resumes!"));
 });
 
 const getStudentsByLocation = asyncHandler(async (req, res) => {
@@ -193,7 +193,7 @@ const getStudentsByLocation = asyncHandler(async (req, res) => {
         { $sort: { count: -1 } }
     ]);
     logger.info("Successfully fetched students by their location!");
-    return res.status(200).json(200, data, "Successfully fetched students by their location!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched students by their location!"));
 });
 
 const getStudentApprovalStats = asyncHandler(async (req, res) => {
@@ -206,7 +206,7 @@ const getStudentApprovalStats = asyncHandler(async (req, res) => {
         }
     ]);
     logger.info("Successfully fetched student approval statistics!");
-    return res.status(200).json(200, data, "Successfully fetched student approval statistics!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched student approval statistics!"));
 });
 
 const getTopActiveStudents = asyncHandler(async (req, res) => {
@@ -237,7 +237,31 @@ const getTopActiveStudents = asyncHandler(async (req, res) => {
         }
     ]);
     logger.info("Successfully fetched top active students!");
-    return res.status(200).json(200, data, "Successfully fetched top active students!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched top active students!"));
+});
+
+const totalUsersCount = asyncHandler(async(req,res)=>{
+    const data = await User.aggregate([
+        { $group: { _id: "", count: { $sum: 1 } } }
+    ]);
+    logger.info("Successfully fetched total users count!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched total users count!"));
+});
+
+const totalApplicationsCount = asyncHandler(async(req,res)=>{
+    const data = await Application.aggregate([
+        { $group: { _id: "", count: { $sum: 1 } } }
+    ]);
+    logger.info("Successfully fetched total Application count!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched total Application count!"));
+});
+
+const totalPlacementsCount = asyncHandler(async(req,res)=>{
+    const data = await Placement.aggregate([
+        { $group: { _id: "", count: { $sum: 1 } } }
+    ]);
+    logger.info("Successfully fetched total Placement count!");
+    return res.status(200).json(new ApiResponse(200, data, "Successfully fetched total Placement count!"));
 });
 
 export {
@@ -250,5 +274,8 @@ export {
     getResumeUploadStats,
     getStudentsByLocation,
     getStudentApprovalStats,
-    getTopActiveStudents
+    getTopActiveStudents,
+    totalUsersCount,
+    totalApplicationsCount,
+    totalPlacementsCount
 }

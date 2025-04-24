@@ -4,6 +4,7 @@ import { Placement } from "../models/placement.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import logger from "../utils/Logger/logger.js";
 import redis from "../utils/redisClient.js";
+import mongoose, { Schema } from "mongoose";
 
 const newPlacement = asyncHandler(async (req, res) => {
     const { company_name, job_title, description, eligibility, location, last_date } = req.body;
@@ -54,6 +55,7 @@ const deletePlacement = asyncHandler(async (req, res) => {
     if (!id) return res.status(400).json(new ApiError(400, "ID is missing"));
 
     try {
+        if(!mongoose.Types.ObjectId.isValid(id)){ return res.status(400).json(new ApiError(400, "Invalid ID format"))}
         const placement = await Placement.findById(id);
         if (!placement) {
             logger.info(`Thers is no placement post for this id ${id}! Hence the placement post cannot be deleted.`);
@@ -65,7 +67,7 @@ const deletePlacement = asyncHandler(async (req, res) => {
             return res.status(500).json(new ApiError(500, "Something went wrong while deleting placement post!"))
         }
         logger.info(`A placement post with id ${id} deleted successfully!`);
-        return res.status(200).json(new ApiResponse(200, {}, "Placement deleted"));
+        return res.status(200).json(new ApiResponse(200, deletedPlacement, "Placement deleted"));
     } catch (err) {
         logger.error(`Error in delete placement: ${err.message}`, { stack: err.stack });
         return res.status(500).json(new ApiError(500, "Server error"));
@@ -78,6 +80,7 @@ const updatePlacement = asyncHandler(async (req, res) => {
     if (!id) return res.status(400).json(new ApiError(400, "ID is missing"));
     if (!newPlacementPost) return res.status(400).json(new ApiError(400, "Updated Placement Post is missing"));
     try {
+        if(!mongoose.Types.ObjectId.isValid(id)){ return res.status(400).json(new ApiError(400, "Invalid ID format"))}
         const placement = await Placement.findById(id);
         if (!placement) {
             logger.info(`Thers is no placement post for this id ${id}! Hence the placement post cannot be updated.`);

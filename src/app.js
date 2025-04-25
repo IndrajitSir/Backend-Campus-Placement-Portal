@@ -7,9 +7,7 @@ import morgan from "morgan";
 import logger from "./utils/Logger/logger.js";
 import { createServer } from "node:http";
 import { Server } from "socket.io"
-import fs from "fs";
-import path from "path";
-import { streamLogs } from "./utils/logStream.js";
+import { streamLogs, logView } from "./utils/logStream.js";
 const app = express();
 const httpServer = createServer(app);
 
@@ -27,29 +25,9 @@ io.on("connection", (socket) => {
     io.in("admin-room").fetchSockets().then(sockets => {
       console.log("Sockets in admin-room:", sockets.map(s => s.id));
     });
-    const logPath = path.join("logs", "combined.log");
-    try {
-      const stats = fs.statSync(logPath);
-      const startPos = Math.max(0, stats.size - 5000);
-      const stream = fs.createReadStream(logPath, {
-        encoding: "utf8",
-        start: startPos
-      });
-
-      let data = "";
-      stream.on("data", chunk => {
-        data += chunk;
-      });
-      stream.on("error", err => {
-        console.error("Error reading log file:", err);
-      });
-
-      stream.on("end", () => {
-        io.to("admin-room").emit("log:update", data.split("\n").filter(Boolean).slice(-10)); // Send last 10 lines
-      });
-    } catch (err) {
-      console.error("Failed to read logs on connect: ", err.message)
-    }
+    socket.on("log:requestView", () => {
+      logView(socket);
+    });
   } else {
     console.log("Client (Non-Admin) connected: ", socket.id);
   }
@@ -106,6 +84,7 @@ import studentRoutes from "./routes/student.route.js"
 import fakeDataRouter from "./fakedata/fakeData.js"
 import monitorSystem from './routes/monitor_system.route.js'
 import SystemAnalytics from './routes/analytics.route.js'
+import interviewRoutes from './routes/interview.route.js';
 //routes declaration
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/auth", authRoutes);
@@ -117,5 +96,22 @@ app.use("/api/v1/student", studentRoutes);
 app.use("/api/v1/fake-data", fakeDataRouter);
 app.use("/api/v1/system", monitorSystem);
 app.use("/api/v1/analytics", SystemAnalytics);
+app.use('/api/v1/interview', interviewRoutes);
+// ------------------------ V2 -------------------------------
+// Routes import
+import userRouter from './v2/routes/users.route.js'
+import studentRouter from './v2/routes/students.route.js'
+import placementRouter from './v2/routes/placements.route.js'
+import applicationRouter from './v2/routes/application.route.js'
+//routes declaration
+app.use("/api/v2/users", userRouter);
+app.use("/api/v2/student", studentRouter);
+app.use("/api/v2/placements", placementRouter);
+app.use("/api/v2/applications", applicationRouter);
+//------------------------- V3 ---------------------------------
+// Routes import
+import applicationRouterV3 from './v3/routes/application.route.js'
+//routes declaration
+app.use("/api/v3/applications", applicationRouterV3);
 
 export { app, httpServer }

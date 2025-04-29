@@ -35,19 +35,21 @@ const verifyUserWithRole = (roles) => asyncHandler(async (req, res, next) => {
 
 const verifyUser = asyncHandler(async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
+        const token = req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.accessToken 
 
         if (!token) {
+            console.log("Unauthorized request")
             return res.status(401).json(new ApiError(401, "Unauthorized request"))
         }
         console.log("request arrived in non role auth");
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await User.findById(decodedToken?._id);
-        console.log("Token verified");
         
         if (!user) {
+            console.log("Invalid Access Token")
             return res.status(401).json(new ApiError(401, "Invalid Access Token"))
         }
+        console.log("Token verified");
 
         req.user = user;
         next()

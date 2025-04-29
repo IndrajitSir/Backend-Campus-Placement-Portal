@@ -5,19 +5,20 @@ import { User } from '../models/user.models.js';
 import { Placement } from '../models/placement.model.js'
 import { Student } from '../models/student.model.js';
 import { Application } from '../models/application.model.js';
-
+import bcrypt from 'bcrypt'
 async function generateFakePlacements(req, res) {
   const placement_staff = [];
   const placements = [];
 
   // Create 10 Placement Staff users
+  const plain_password = '1234';
   for (let i = 0; i < 10; i++) {
     const placement_staff_Id = faker.database.mongodbObjectId();
     placement_staff.push({
       _id: placement_staff_Id,
       name: faker.person.fullName(),
       email: faker.internet.email(),
-      password: 1234,
+      password: await bcrypt.hash(plain_password, 10),
       phoneNumber: faker.phone.number().replace(/\D/g, '').slice(0, 10),
       role: faker.helpers.arrayElement(["placement_staff", "admin"]),
       refreshToken: null,
@@ -60,13 +61,14 @@ async function generateFakePlacements(req, res) {
 async function generateFakeStudents(req, res) {
   const students = [];
   const studentDetails = [];
+  const plain_password = '1234';
   for (let i = 0; i < 10; i++) {
     const student_Id = faker.database.mongodbObjectId();
     students.push({
       _id: student_Id,
       name: faker.person.fullName(),
       email: faker.internet.email(),
-      password: 1234,
+      password: await bcrypt.hash(plain_password, 10),
       phoneNumber: faker.phone.number().replace(/\D/g, '').slice(0, 10),
       role: "student",
       refreshToken: null,
@@ -126,13 +128,14 @@ async function generateFakeData(req, res) {
 
   try {
     // Create 10 Placement Staff users
+    const plain_password = '1234';
     for (let i = 0; i < 10; i++) {
       const placement_staff_Id = faker.database.mongodbObjectId();
       placement_staff.push({
         _id: placement_staff_Id,
         name: faker.person.fullName(),
         email: faker.internet.email(),
-        password: 1234,
+        password: await bcrypt.hash(plain_password, 10),
         phoneNumber: faker.phone.number().replace(/\D/g, '').slice(0, 10),
         role: faker.helpers.arrayElement(["placement_staff", "admin"]),
         refreshToken: null,
@@ -375,7 +378,7 @@ async function generateFakeData(req, res) {
             _id: student_Id,
             name: faker.person.fullName(),
             email: faker.internet.email(),
-            password: 1234,
+            password: await bcrypt.hash(plain_password, 10),
             phoneNumber: faker.phone.number().replace(/\D/g, '').slice(0, 10),
             role: "student",
             refreshToken: null,

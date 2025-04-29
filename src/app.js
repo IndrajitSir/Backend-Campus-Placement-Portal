@@ -7,7 +7,8 @@ import morgan from "morgan";
 import logger from "./utils/Logger/logger.js";
 import { createServer } from "node:http";
 import { Server } from "socket.io"
-import { streamLogs, logView } from "./utils/logStream.js";
+import { setupSocket } from "./socket/socket.js";
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -17,25 +18,8 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
-io.on("connection", (socket) => {
-  const role = socket.handshake.query.role;
-  if (role === "admin" || role === "super_admin") {
-    socket.join("admin-room");
-    console.log("Admin connected: ", socket.id);
-    io.in("admin-room").fetchSockets().then(sockets => {
-      console.log("Sockets in admin-room:", sockets.map(s => s.id));
-    });
-    socket.on("log:requestView", () => {
-      logView(socket);
-    });
-  } else {
-    console.log("Client (Non-Admin) connected: ", socket.id);
-  }
-  socket.on("disconnect", () => {
-    console.log("client disconnected: ", socket.id);
-  })
-});
-streamLogs(io);
+setupSocket(io);
+// streamLogs(io);
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true

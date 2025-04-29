@@ -28,7 +28,6 @@ function removeCache(){
     } else {
       console.log("redis key(placement:all) does not exists!");
     }
-    next()
   });
 }
 placementSchema.pre("save", async function (next) {

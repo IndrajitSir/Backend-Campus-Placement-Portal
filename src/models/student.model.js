@@ -47,7 +47,6 @@ function removeCache(){
     } else {
       console.log("redis key(students:all) does not exists!");
     }
-    next()
   });
 }
 studentSchema.pre("save", async function (next) {

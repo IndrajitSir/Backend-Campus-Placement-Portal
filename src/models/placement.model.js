@@ -8,7 +8,8 @@ const placementSchema = new Schema({
   eligibility: { type: String },
   location: { type: String },
   last_date: { type: Date, required: true },
-  created_by: { type: Schema.Types.ObjectId, ref: "User", required: true }
+  created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  salary: { type: Number, default: null}
 }, { timestamps: true });
 
 placementSchema.index({created_by: 1});

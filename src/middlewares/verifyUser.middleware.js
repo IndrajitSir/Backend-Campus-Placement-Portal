@@ -7,7 +7,7 @@ import logger from "../utils/Logger/logger.js";
 const verifyUserWithRole = (roles) => asyncHandler(async (req, res, next) => {
     try {
         const token = req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.accessToken;
-        console.log("request arrived in roles");
+        // console.log("request arrived in roles");
         // console.log(`token: ${req.header("Authorization")} || ${req.cookies?.accessToken}`);
 
         if (!token) {
@@ -38,18 +38,18 @@ const verifyUser = asyncHandler(async (req, res, next) => {
         const token = req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.accessToken 
 
         if (!token) {
-            console.log("Unauthorized request")
+            // console.log("Unauthorized request")
             return res.status(401).json(new ApiError(401, "Unauthorized request"))
         }
-        console.log("request arrived in non role auth");
+        // console.log("request arrived in non role auth");
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await User.findById(decodedToken?._id);
         
         if (!user) {
-            console.log("Invalid Access Token")
+            // console.log("Invalid Access Token")
             return res.status(401).json(new ApiError(401, "Invalid Access Token"))
         }
-        console.log("Token verified");
+        // console.log("Token verified");
 
         req.user = user;
         next()

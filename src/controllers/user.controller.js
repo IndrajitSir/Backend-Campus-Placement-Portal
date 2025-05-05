@@ -9,7 +9,6 @@ import logger from "../utils/Logger/logger.js";
 
 const logoutUser = asyncHandler(async (req, res) => {
     try {
-        console.log("User logged Out");
         await User.findByIdAndUpdate(req.user._id,
             {
                 $unset: {
@@ -102,7 +101,6 @@ const updatePhoneNumber = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     try {
-        console.log("returning current user");
         if (req.user.role === "student") {
             const student = await Student.findOne({ student_id: req.user._id });
             return res.status(200).json(new ApiResponse(200,

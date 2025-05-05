@@ -8,11 +8,13 @@ const userSchema = new Schema(
         password: { type: String, required: true },
         phoneNumber: { type: Number, default: null },
         role: { type: String, enum: ["super_admin", "admin", "placement_staff", "student"], required: true },
-        refreshToken: { type: String, default: null }
+        refreshToken: { type: String, default: null },
+        dateOfBirth: { type: Date, default: null },
+        gender: { type: String, default: null },
     }, { timestamps: true }
 );
 
-userSchema.index({role: 1});
+userSchema.index({ role: 1 });
 
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();

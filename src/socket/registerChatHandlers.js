@@ -1,5 +1,4 @@
-import { timers } from "../constants.js";
-import { activeRooms } from "../constants.js";
+import { timers, activeRooms } from "../constants.js";
 export function registerChatHandlers(io, socket) {
     socket.on("chat:sendMessage", ({ roomId, message }, ack) => {
         if (roomId && activeRooms.has(roomId)) {

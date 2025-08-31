@@ -10,7 +10,7 @@ import logger from "../utils/Logger/logger.js";
 const register = asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
     if (!name) return res.status(400).json(new ApiError(400, "Name is required"))
-    if (!email) return res.status(400).json(ApiError(400, "Email is required"))
+    if (!email) return res.status(400).json(new ApiError(400, "Email is required"))
     if (!password) return res.status(400).json(new ApiError(400, "Password is required"))
     if (!role) return res.status(400).json(new ApiError(400, "Role is required"))
 

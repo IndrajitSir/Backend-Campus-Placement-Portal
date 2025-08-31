@@ -65,7 +65,7 @@ import applicationRoutes from "./routes/application.route.js"
 import userRoutes from "./routes/user.route.js"
 import adminRoutes from "./routes/admin.route.js"
 import studentRoutes from "./routes/student.route.js"
-import fakeDataRouter from "./fakedata/fakeData.js"
+// import fakeDataRouter from "./fakedata/fakeData.js"
 import monitorSystem from './routes/monitor_system.route.js'
 import SystemAnalytics from './routes/analytics.route.js'
 import interviewRoutes from './routes/interview.route.js';
@@ -77,7 +77,7 @@ app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/student", studentRoutes);
-app.use("/api/v1/fake-data", fakeDataRouter);
+// app.use("/api/v1/fake-data", fakeDataRouter);
 app.use("/api/v1/system", monitorSystem);
 app.use("/api/v1/analytics", SystemAnalytics);
 app.use('/api/v1/interview', interviewRoutes);

@@ -38,7 +38,7 @@ const register = asyncHandler(async (req, res) => {
         logger.info(`New user registered Successfully!! created ID: ${createdUser._id} and Name: ${createdUser.name}`)
         return res.status(201).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
             .json(new ApiResponse(200, { user: createdUser, accessToken, refreshToken }, "User registered Successfully"))
-    } catch (error) {
+    } catch (err) {
         logger.error(`Error while registering new user: ${err.message}`, { stack: err.stack });
         return res.status(500).json(new ApiError(500, `Server error`));
     }
@@ -69,7 +69,7 @@ const login = asyncHandler(async (req, res) => {
         logger.info(`A user logged in Successfully!! ID: ${loggedInUser._id} and Name: ${loggedInUser.name}`)
         return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
             .json(new ApiResponse(200, { user: loggedInUser, accessToken, refreshToken }, "User logged In Successfully"))
-    } catch (error) {
+    } catch (err) {
         logger.error(`Error in login: ${err.message}`, { stack: err.stack });
         return res.status(500).json(new ApiError(500, `Server error`));
     }
@@ -105,7 +105,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
         }
         logger.info("A new admin created Successfully!");
         return res.status(201).json(new ApiResponse(201, { createdAdmin }, "Admin created Successfully"))
-    } catch (error) {
+    } catch (err) {
         logger.error(`Error while registering new admin: ${err.message}`, { stack: err.stack });
         return res.status(500).json(new ApiError(500, `Server error`));
     }

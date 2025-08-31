@@ -15,6 +15,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL,
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
@@ -44,18 +45,6 @@ app.use(cookieParser());
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL); // Match frontend
-  res.header("Access-Control-Allow-Credentials", 'true'); // Required for cookies
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204); // No Content
-  }
-
-  next();
-});
 
 // Routes import
 import healthcheckRouter from "./routes/healthCheck.routes.js"

@@ -13,8 +13,9 @@ const register = asyncHandler(async (req, res) => {
     if (!email) return res.status(400).json(new ApiError(400, "Email is required"))
     if (!password) return res.status(400).json(new ApiError(400, "Password is required"))
     if (!role) return res.status(400).json(new ApiError(400, "Role is required"))
-
+    
     try {
+        logger.info("Checking existing user...")
         const existedUser = await User.findOne({
             $or: [{ name }, { email }]
         })
@@ -22,10 +23,12 @@ const register = asyncHandler(async (req, res) => {
             logger.info(`A user trying to register himself with the name: ${name} and ${email} which already exists!!`);
             return res.status(409).json(new ApiError(409, "User already exists"));
         }
+        logger.info("Creating new user...");
         const user = await User.create({ name, email, password, role });
         if (role === "student") {
             await Student.create({ student_id: user._id });
         }
+        logger.info("Generating tokens...");
         const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user);
 
         const createdUser = await User.findById(user._id).select(
@@ -40,7 +43,7 @@ const register = asyncHandler(async (req, res) => {
             .json(new ApiResponse(200, { user: createdUser, accessToken, refreshToken }, "User registered Successfully"))
     } catch (err) {
         logger.error(`Error while registering new user: ${err.message}`, { stack: err.stack });
-        return res.status(500).json(new ApiError(500, `Server error`));
+        return res.status(500).json(new ApiError(500, err.message));
     }
 });
 

@@ -7,3 +7,4 @@ export const options = {
 }
 export const activeRooms = new Set();
 export const timers = {};
+export const userSocketMap = new Map();

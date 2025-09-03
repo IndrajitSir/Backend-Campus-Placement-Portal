@@ -214,10 +214,10 @@ const getAllAdmins = asyncHandler(async (req, res) => {
     }
 });
 
-const getNonSuperAdminUsers = asyncHandler(async (req, res)=>{
+const getNonSuperAdminUsers = asyncHandler(async (req, res) => {
     try {
         const users = await User.find({
-            role: { $ne: "super_admin"}
+            role: { $ne: "super_admin" }
         }, "name email role");
         if (!Array.isArray(users) && !users.length > 0) {
             logger.info(`There is no users in the database!`);
@@ -239,13 +239,35 @@ const getOneUser = asyncHandler(async (req, res) => {
             logger.info(`User with ${nameOremail} does not exists in the database!`)
             return res.status(409).json(new ApiError(409, "User does not exists"));
         }
-        if(existedUser.role !== "student"){
+        if (existedUser.role !== "student") {
             logger.info(`Sending one user data in response! having Email or Name: ${nameOremail}`);
             return res.status(200).json(new ApiResponse(200, existedUser, "User fetched successfully!"));
         }
         const student = await Student.findOne({ student_id: existedUser._id }).populate("student_id").select("-password -refreshToken");
         logger.info(`Sending one user data in response! having Email or Name: ${nameOremail}`);
-        return res.status(200).json(new ApiResponse(200, student, ""));
+        return res.status(200).json(new ApiResponse(200, student, "User fetched successfully!"));
+    } catch (error) {
+        logger.error(`Error in get one user : ${error.message}`, { stack: error.stack });
+        return res.status(500).json(new ApiError(500, `Server error`));
+    }
+});
+
+const getUserById = asyncHandler(async (req, res) => {
+    const userId = req.params.userId;
+    if (!userId) return res.status(400).json(new ApiError(400, "userId is missing"))
+    try {
+        const existedUser = await User.findById(userId).select("-password -refreshToken:")
+        if (!existedUser) {
+            logger.info(`User with ${userId} does not exists in the database!`)
+            return res.status(409).json(new ApiError(409, "User does not exists"));
+        }
+        if (existedUser.role !== "student") {
+            logger.info(`Sending one user data in response! having userId: ${userId}`);
+            return res.status(200).json(new ApiResponse(200, existedUser, "User fetched successfully!"));
+        }
+        const student = await Student.findOne({ student_id: existedUser._id }).populate("student_id").select("-password -refreshToken");
+        logger.info(`Sending one user data in response! having userId: ${userId}`);
+        return res.status(200).json(new ApiResponse(200, student, "User fetched successfully!"));
     } catch (error) {
         logger.error(`Error in get one user : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, `Server error`));
@@ -264,5 +286,6 @@ export {
     getAllPlacementStaffs,
     getAllAdmins,
     getNonSuperAdminUsers,
-    getOneUser
+    getOneUser,
+    getUserById
 }

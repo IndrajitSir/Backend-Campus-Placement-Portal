@@ -10,7 +10,8 @@ import { logoutUser,
     getAllPlacementStaffs,
     getAllAdmins,
     getNonSuperAdminUsers,
-    getOneUser
+    getOneUser,
+    getUserById
  } from "../controllers/user.controller.js";
 import { verifyUser } from '../middlewares/verifyUser.middleware.js';
 const router = Router();
@@ -29,4 +30,5 @@ router.route("/placement-staff-all").get(getAllPlacementStaffs);
 router.route("/admin-all").get(getAllAdmins);
 router.route("/all-users-nameAndEmail").get(getNonSuperAdminUsers);
 router.route("/one/:nameOremail(*)").get(getOneUser);
+router.route("/:userId").get(getUserById);
 export default router

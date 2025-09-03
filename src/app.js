@@ -21,6 +21,10 @@ const io = new Server(httpServer, {
 });
 setupSocket(io);
 // streamLogs(io);
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true
@@ -76,11 +80,15 @@ import userRouter from './v2/routes/users.route.js'
 import studentRouter from './v2/routes/students.route.js'
 import placementRouter from './v2/routes/placements.route.js'
 import applicationRouter from './v2/routes/application.route.js'
+import friendRequestRouter from './v2/routes/friendRequest.route.js'
+import personalChatMessageRouter from './v2/routes/message.route.js'
 //routes declaration
 app.use("/api/v2/users", userRouter);
 app.use("/api/v2/student", studentRouter);
 app.use("/api/v2/placements", placementRouter);
 app.use("/api/v2/applications", applicationRouter);
+app.use("/api/v2/friend-request", friendRequestRouter);
+app.use("/api/v2/messages", personalChatMessageRouter);
 //------------------------- V3 ---------------------------------
 // Routes import
 import applicationRouterV3 from './v3/routes/application.route.js'

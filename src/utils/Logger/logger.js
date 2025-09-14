@@ -5,7 +5,7 @@ import { LogtailTransport } from "@logtail/winston";
 
 const isProduction = process.env.NODE_ENV === "production";
 const logtail = new Logtail(process.env.LOGTAIL_SOURCE_TOKEN);
-
+logtail.info("server started successfully");
 const transports = [];
 
 // Development → log to files + console

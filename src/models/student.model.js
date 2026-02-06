@@ -34,15 +34,19 @@ studentSchema.index({ approved: 1 });
 studentSchema.index({ department: 1 });
 
 function removeCache() {
+  if (redis.status !== "ready") {
+    console.log("Redis not ready, skipping students cache removal.");
+    return;
+  }
   redis.exists("students:all", (err, reply) => {
     if (err) {
-      logger.error("Error checking redis key(students:all) existence in students schema:", err);
+      console.error("Error checking redis key(students:all) existence in students schema:", err);
     } else if (reply === 1) {
       redis.del("students:all", (delErr, delReply) => {
         if (delErr) {
-          logger.error("Error while deleting redis key(students:all) in students schema:", delErr);
+          console.error("Error while deleting redis key(students:all) in students schema:", delErr);
         } else {
-          logger.info("redis key(students:all) deleted in students schema", delReply);
+          console.log("redis key(students:all) deleted in students schema", delReply);
         }
       });
     } else {

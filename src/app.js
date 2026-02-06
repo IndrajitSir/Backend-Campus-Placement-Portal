@@ -12,6 +12,8 @@ import { setupSocket } from "./socket/socket.js";
 const app = express();
 const httpServer = createServer(app);
 
+app.set("trust proxy", 1);
+
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL,
@@ -27,7 +29,8 @@ app.use((req, res, next) => {
 });
 app.use(cors({
   origin: process.env.FRONTEND_URL,
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }));
 app.use(morgan("combined", {
   stream: {

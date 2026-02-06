@@ -6,6 +6,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Student } from "../models/student.model.js"
 import logger from "../utils/Logger/logger.js";
+import jwt from "jsonwebtoken";
 
 const logoutUser = asyncHandler(async (req, res) => {
     try {
@@ -16,7 +17,7 @@ const logoutUser = asyncHandler(async (req, res) => {
                 }
             }, { new: true }
         )
-        logger.info(`A user with the ID: ${req.user._id} looged out!`);
+        logger.info(`A user with the ID: ${req.user._id} logged out!`);
         return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options)
             .json(new ApiResponse(200, {}, "User logged Out"))
     }
@@ -234,7 +235,7 @@ const getOneUser = asyncHandler(async (req, res) => {
     const nameOremail = req.params.nameOremail;
     if (!nameOremail) return res.status(400).json(new ApiError(400, "value is missing"))
     try {
-        const existedUser = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] }).select("-password -refreshToken:")
+        const existedUser = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] }).select("-password -refreshToken")
         if (!existedUser) {
             logger.info(`User with ${nameOremail} does not exists in the database!`)
             return res.status(409).json(new ApiError(409, "User does not exists"));
@@ -256,7 +257,7 @@ const getUserById = asyncHandler(async (req, res) => {
     const userId = req.params.userId;
     if (!userId) return res.status(400).json(new ApiError(400, "userId is missing"))
     try {
-        const existedUser = await User.findById(userId).select("-password -refreshToken:")
+        const existedUser = await User.findById(userId).select("-password -refreshToken")
         if (!existedUser) {
             logger.info(`User with ${userId} does not exists in the database!`)
             return res.status(409).json(new ApiError(409, "User does not exists"));

@@ -12,29 +12,29 @@ const uploadResume = asyncHandler(async (req, res) => {
     const resumeLocalPath = req.files?.resume[0]?.path;
     if (!resumeLocalPath) return res.status(401).json(new ApiError(401, "Resume is missing!"));
     try {
-        const student = await Student.find({ student_id: req.user._id });
+        const student = await Student.findOne({ student_id: req.user._id });
         if (!student) {
             logger.info(`Student doesn't exists! Error while searching for student in upload resume.`);
             return res.status(404).json(new ApiError(404, "Student not found!"));
         }
-        if (student.resume === "") {
+        if (!student.resume) {
             const uploadedResume = await uploadOnCloudinary(resumeLocalPath);
             const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedResume.url } }, { new: true });
             if (!response) {
-                logger.info(`Something went wrong while updating the resume in the database for the student with ID: ${student._id} and Name: ${student._id}!`)
+                logger.info(`Something went wrong while updating the resume in the database for the student with ID: ${student._id}!`)
                 return res.status(500).json(new ApiError(500, "Something went wrong while updating the resume in the database!"))
             }
-            logger.info(`Resume updated successfully for the student with ID: ${student._id} and Name: ${student._id}!`)
+            logger.info(`Resume updated successfully for the student with ID: ${student._id}!`)
             return res.status(200)
                 .json(new ApiResponse(200, response, "Resume updated successfully!"))
         }
         await deleteFromCloudinary(student.resume);
         const uploadedResume = await uploadOnCloudinary(resumeLocalPath);
 
-        const response = await Student.findByIdAndUpdate(req.user._id, { resume: uploadedResume.url }, { new: true });
+        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedResume.url } }, { new: true });
 
         if (!response) {
-            logger.info(`Something went wrong while updating the resume in the database for the student with ID: ${student._id} and Name: ${student._id}!`)
+            logger.info(`Something went wrong while updating the resume in the database for the student with ID: ${student._id}!`)
             return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
         }
         logger.info(`Resume updated successfully for the student with ID: ${student._id}!`)
@@ -48,14 +48,14 @@ const uploadResume = asyncHandler(async (req, res) => {
 
 const deleteResume = asyncHandler(async (req, res) => {
     try {
-        const student = await Student.find({ student_id: req.user._id });
+        const student = await Student.findOne({ student_id: req.user._id });
 
         if (!student) {
             logger.info(`Student doesn't exists! Error while searching for student in delete resume.`);
             return res.status(404).json(new ApiError(404, "Student not found!"));
         }
 
-        if (student.resume === "") {
+        if (!student.resume) {
             logger.info(`A student with ID: ${student._id} is trying to delete his resume but the resume does not exists.`)
             return res.status(404).json(new ApiResponse(404, {}, "Resume is Unavailable!"))
         }
@@ -106,7 +106,7 @@ const getOneStudent = asyncHandler(async (req, res) => {
     if (!nameOremail) return res.status(400).json(new ApiError(400, "value is missing"))
     try {
         const existedStudent = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] })
-        if (!existedUser) {
+        if (!existedStudent) {
             logger.info(`Student with ${nameOremail} does not exists in the database!`)
             return res.status(409).json(new ApiError(409, "Student does not exists"));
         }
@@ -123,7 +123,7 @@ const updateLocation = asyncHandler(async (req, res) => {
     const { newLocation } = req.body;
     if (!newLocation) return res.status(400).json(new ApiError(400, "Location is missing"));
     try {
-        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { location: newLocation }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({ student_id: req.user._id }, { location: newLocation }, { new: true });
         if (!updatedRecord) {
             logger.info(`Location update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating location"))
@@ -139,7 +139,7 @@ const updateAbout = asyncHandler(async (req, res) => {
     const { newAbout } = req.body;
     if (!newAbout) return res.status(400).json(new ApiError(400, "New About field is missing"));
     try {
-        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { about: newAbout }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({ student_id: req.user._id }, { about: newAbout }, { new: true });
         if (!updatedRecord) {
             logger.info(`About update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating about field"))
@@ -155,7 +155,7 @@ const updateProfessionalSkill = asyncHandler(async (req, res) => {
     const { newProfessionalSkill } = req.body;
     if (!newProfessionalSkill) return res.status(400).json(new ApiError(400, "Professional Skill is missing"));
     try {
-        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { professional_skill: newProfessionalSkill }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({ student_id: req.user._id }, { professional_skill: newProfessionalSkill }, { new: true });
         if (!updatedRecord) {
             logger.info(`Professional Skill update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating Professional Skill field"))
@@ -171,7 +171,7 @@ const updateDepartment = asyncHandler(async (req, res) => {
     const { newDepartment } = req.body;
     if (!newDepartment) return res.status(400).json(new ApiError(400, "Department value is missing"));
     try {
-        const updatedRecord = await Student.findOneAndUpdate({student_id: req.user._id}, { department: newDepartment }, { new: true });
+        const updatedRecord = await Student.findOneAndUpdate({ student_id: req.user._id }, { department: newDepartment }, { new: true });
         if (!updatedRecord) {
             logger.info(`Department update failed for user ${req.user._id}`);
             return res.status(400).json(new ApiError(400, "Some error ocuured while updating Department field"))
@@ -187,29 +187,30 @@ const addNewProject = asyncHandler(async (req, res) => {
     const student_id = req.params.student_id;
     const { projects } = req.body;
 
-    projects.forEach(async (project) => {
-        const { title, description, link } = project;
-        if (!student_id || !title || !description || !link) {
-            return res.status(400).json(new ApiError(400, "All fields are required!"));
+    if (!student_id || !projects || !Array.isArray(projects)) {
+        return res.status(400).json(new ApiError(400, "Student ID and valid projects array are required!"));
+    }
+
+    try {
+        const student = await Student.findById(student_id);
+        if (!student) {
+            logger.info(`Student with the ID: ${student_id}, not found in the database, cannot add a new project!!`);
+            return res.status(404).json(new ApiError(404, "Student not found!"));
         }
-        try {
-            const student = await Student.findById(student_id);
-            if (!student) {
-                logger.info(`Student with the ID: ${student_id}, not found in the database, cannot add a new project!!`);
-                return res.status(404).json(new ApiError(404, "Student not found!"));
+
+        for (const project of projects) {
+            const { title, description, link } = project;
+            if (title && description && link) {
+                student.projects.push({ title, description, link });
             }
-
-            student.projects.push({ title, description, link });
-            await student.save();
-
-            const addedProject = student.projects[student.projects.length - 1];
-
-            return res.status(201).json(new ApiResponse(201, { project_id: addedProject._id, student }, "Project added successfully!"));
-        } catch (error) {
-            logger.error(`Error in add new project : ${error.message}`, { stack: error.stack });
-            return res.status(500).json(new ApiError(500, "Server error!"));
         }
-    });
+
+        await student.save();
+        return res.status(201).json(new ApiResponse(201, student, "Projects added successfully!"));
+    } catch (error) {
+        logger.error(`Error in add new project : ${error.message}`, { stack: error.stack });
+        return res.status(500).json(new ApiError(500, "Server error!"));
+    }
 });
 
 const updateProject = asyncHandler(async (req, res) => {
@@ -319,29 +320,23 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.files?.avatar[0]?.path;
     if (!avatarLocalPath) return res.status(401).json(new ApiError(401, "Avatar file is missing!"));
     try {
-        const student = await Student.find({ student_id: req.user._id });
+        const student = await Student.findOne({ student_id: req.user._id });
 
         if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
-        if (student.avatar === "") {
-            const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
-            const response = await Student.findOneAndUpdate({ student_id: req?.user._id }, { $set: { avatar: uploadedAvatar.url } }, { new: true });
-            if (!response) {
-                return res.status(500).json(new ApiError(500, "Something went wrong while updating the Avatar!"))
-            }
-            return res.status(200).json(new ApiResponse(200, response, "Avatar updated successfully!"))
+        if (student.avatar) {
+            await deleteFromCloudinary(student.avatar);
         }
-        await deleteFromCloudinary(student.avatar);
-        const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
 
-        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedAvatar.url } }, { new: true });
+        const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
+        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { avatar: uploadedAvatar.url } }, { new: true });
 
         if (!response) {
-            logger.info(`Error while updating avatar of a student! Student ID: ${req?.user._id}`);
+            logger.info(`Error while updating avatar of a student! Student ID: ${req.user._id}`);
             return res.status(500).json(new ApiError(500, "Something went wrong while updating the Avatar!"))
         }
         return res.status(200).json(new ApiResponse(200, response, "Avatar updated successfully!"))
     } catch (error) {
-        logger.error(`Error in update avatar : ${err.message}`, { stack: err.stack });
+        logger.error(`Error in update avatar : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, "Server error"));
     }
 });

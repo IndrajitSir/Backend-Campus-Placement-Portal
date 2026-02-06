@@ -4,11 +4,16 @@ import { Logtail } from "@logtail/node";
 import { LogtailTransport } from "@logtail/winston";
 
 const isProduction = process.env.NODE_ENV === "production";
-const logtail = new Logtail(process.env.LOGTAIL_SOURCE_TOKEN);
-logtail.info("server started successfully");
-const transports = [];
+const logtailToken = process.env.LOGTAIL_SOURCE_TOKEN;
 
-// Development → log to files + console
+const transports = [
+  new winston.transports.Console({
+    format: isProduction
+      ? winston.format.combine(winston.format.timestamp(), winston.format.json())
+      : winston.format.combine(winston.format.colorize(), winston.format.simple())
+  })
+];
+
 if (!isProduction) {
   transports.push(
     new DailyRotateFile({
@@ -21,33 +26,20 @@ if (!isProduction) {
     new winston.transports.File({
       filename: "logs/error.log",
       level: "error",
-    }),
-    new winston.transports.File({
-      filename: "logs/combined.log",
-    }),
-    new winston.transports.Console({
-      format: winston.format.simple(),
     })
   );
 }
 
-// Production → log to console + Logtail
-if (isProduction) {
-  transports.push(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
-      ),
-    }),
-    new LogtailTransport(logtail) // send logs to Logtail
-  );
+if (isProduction && logtailToken) {
+  const logtail = new Logtail(logtailToken);
+  transports.push(new LogtailTransport(logtail));
 }
 
 const logger = winston.createLogger({
-  level: "info",
+  level: isProduction ? "info" : "debug",
   format: winston.format.combine(
-    winston.format.timestamp(),
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    winston.format.errors({ stack: true }),
     winston.format.json()
   ),
   transports,

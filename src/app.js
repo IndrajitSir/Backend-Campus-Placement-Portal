@@ -14,9 +14,27 @@ const httpServer = createServer(app);
 
 app.set("trust proxy", 1);
 
+// FRONTEND_URL can be a single origin or a comma-separated list. Vercel
+// preview/branch deployments get their own subdomain, so any
+// https://*.vercel.app origin is allowed too; in development any
+// http://localhost:<port> works out of the box.
+const allowedOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+// cors / socket.io expect the (origin, callback) signature.
+const isAllowedOrigin = (origin, callback) => {
+  const allowed =
+    allowedOrigins.includes(origin) ||
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin || "") ||
+    (process.env.NODE_ENV !== "production" && /^http:\/\/localhost:\d+$/.test(origin || ""));
+  callback(null, allowed);
+};
+
 const io = new Server(httpServer, {
   cors: {
-    origin: [process.env.FRONTEND_URL, "https://campus-placement-portal.vercel.app"],
+    origin: isAllowedOrigin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
   }
@@ -28,7 +46,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, "https://campus-placement-portal.vercel.app"],
+  origin: isAllowedOrigin,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]

@@ -14,23 +14,24 @@ if (isProduction && process.env.LOGTAIL_SOURCE_TOKEN) {
 }
 const transports = [];
 
-if (!isProduction) {
-  transports.push(
-    new DailyRotateFile({
-      filename: "logs/application-%DATE%.log",
-      datePattern: "YYYY-MM-DD",
-      zippedArchive: true,
-      maxSize: "20m",
-      maxFiles: "14d",
-    }),
-    new winston.transports.File({
-      filename: "logs/error.log",
-      level: "error",
-    })
-  );
-}
+// File transports in every environment (incl. production) so the live
+// log viewer in System Monitoring has something to read. Render's disk
+// is ephemeral, so this is safe — files reset on redeploy.
+transports.push(
+  new DailyRotateFile({
+    filename: "logs/application-%DATE%.log",
+    datePattern: "YYYY-MM-DD",
+    zippedArchive: true,
+    maxSize: "20m",
+    maxFiles: "14d",
+  }),
+  new winston.transports.File({
+    filename: "logs/error.log",
+    level: "error",
+  })
+);
 
-// Production → log to console + Logtail (only if a token is configured)
+// Production → additionally log to console + Logtail (only if a token is configured)
 if (isProduction) {
   const productionTransports = [
     new winston.transports.Console({

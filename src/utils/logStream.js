@@ -1,60 +1,46 @@
 import fs from "fs";
-import path from "path";
-import chokidar from "chokidar";
+import { getCurrentLogPath, readRecentLogLines } from "./logReader.js";
+
+/**
+ * Stream live log lines to the admin socket room.
+ *
+ * Uses a poller rather than fs-watch/chokidar: winston writes through a
+ * single open fd which does not reliably trigger change events on Windows.
+ * (Kept in sync with `socket/registerLogHandlers.js` — this variant is the
+ * io-level version; only one of the two should be active.)
+ */
+let pollerStarted = false;
 
 export const streamLogs = (io) => {
-  const logPath = path.join("logs", "combined.log");
+  if (pollerStarted) return;
+  pollerStarted = true;
 
-  // Watch log file for changes
-  const watcher = chokidar.watch(logPath, {
-    persistent: true,
-    ignoreInitial: true,
-  });
+  const seenSizes = new Map();
 
-  watcher.on("change", () => {
-    const stats = fs.statSync(logPath);
-    const startPos = Math.max(0, stats.size - 5000);
-    const stream = fs.createReadStream(logPath, {
-      encoding: "utf8",
-      start: startPos
-    });
+  const tick = async () => {
+    const logPath = getCurrentLogPath();
+    if (!logPath) return;
+    let size;
+    try {
+      size = fs.statSync(logPath).size;
+    } catch {
+      return;
+    }
+    const last = seenSizes.get(logPath) ?? 0;
+    if (size !== last) {
+      seenSizes.set(logPath, size);
+      if (size > 0) {
+        const lines = await readRecentLogLines(10);
+        if (lines.length) io.to("admin-room").emit("log:update", lines);
+      }
+    }
+  };
 
-    let data = "";
-    stream.on("data", chunk => {
-      data += chunk;
-    });
-    stream.on("error", err => {
-      console.error("Error reading log file:", err);
-    });
-
-    stream.on("end", () => {
-      io.to("admin-room").emit("log:update", data.split("\n").filter(Boolean).slice(-10)); // Send last 10 lines
-    });
-  });
+  tick();
+  setInterval(tick, 2000);
 };
 
-export const logView = (socket) => {
-  const logPath = path.join("logs", "combined.log");
-  try {
-    const stats = fs.statSync(logPath);
-    const startPos = Math.max(0, stats.size - 5000);
-    const stream = fs.createReadStream(logPath, {
-      encoding: "utf8",
-      start: startPos
-    });
-
-    let data = "";
-    stream.on("data", chunk => {
-      data += chunk;
-    });
-    stream.on("error", err => {
-      console.error("Error reading log file:", err);
-    });
-
-    stream.on("end", () => {
-      socket.emit("log:view", data.split("\n").filter(Boolean).slice(-10)); // Send last 10 lines
-    });
-  } catch (err) {
-    console.error("Failed to read logs on connect: ", err.message)
-  }
-}
+export const logView = async (socket) => {
+  const lines = await readRecentLogLines(10);
+  if (lines.length) socket.emit("log:view", lines);
+};

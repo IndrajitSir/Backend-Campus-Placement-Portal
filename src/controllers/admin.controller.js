@@ -11,7 +11,7 @@ const createNewStudent = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiError(400, "Name is required"))
     }
     if (!email) {
-        return res.status(400).json(ApiError(400, "Email is required"))
+        return res.status(400).json(new ApiError(400, "Email is required"))
     }
     if (!password) {
         return res.status(400).json(new ApiError(400, "Password is required"))
@@ -49,7 +49,7 @@ const createNewStaff = (role) => asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiError(400, "Name is required"))
     }
     if (!email) {
-        return res.status(400).json(ApiError(400, "Email is required"))
+        return res.status(400).json(new ApiError(400, "Email is required"))
     }
     if (!password) {
         return res.status(400).json(new ApiError(400, "Password is required"))

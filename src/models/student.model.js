@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import redis from "../utils/redisClient.js";
+import logger from "../utils/Logger/logger.js";
 
 const studentSchema = new Schema(
   {
@@ -34,21 +35,25 @@ studentSchema.index({ approved: 1 });
 studentSchema.index({ department: 1 });
 
 function removeCache() {
-  redis.exists("students:all", (err, reply) => {
-    if (err) {
-      logger.error("Error checking redis key(students:all) existence in students schema:", err);
-    } else if (reply === 1) {
-      redis.del("students:all", (delErr, delReply) => {
-        if (delErr) {
-          logger.error("Error while deleting redis key(students:all) in students schema:", delErr);
-        } else {
-          logger.info("redis key(students:all) deleted in students schema", delReply);
-        }
-      });
-    } else {
-      console.log("redis key(students:all) does not exists!");
-    }
-  });
+  try {
+    redis.exists("students:all", (err, reply) => {
+      if (err) {
+        logger.error("Error checking redis key(students:all) existence in students schema:", err);
+      } else if (reply === 1) {
+        redis.del("students:all", (delErr, delReply) => {
+          if (delErr) {
+            logger.error("Error while deleting redis key(students:all) in students schema:", delErr);
+          } else {
+            logger.info("redis key(students:all) deleted in students schema", delReply);
+          }
+        });
+      } else {
+        console.log("redis key(students:all) does not exists!");
+      }
+    });
+  } catch (err) {
+    logger.error("Error in removeCache for students schema:", err);
+  }
 }
 studentSchema.pre("save", async function (next) {
   if (typeof this.student_id === "string") {

@@ -12,9 +12,27 @@ import { setupSocket } from "./socket/socket.js";
 const app = express();
 const httpServer = createServer(app);
 
+// FRONTEND_URL can be a single origin or a comma-separated list, e.g.
+//   FRONTEND_URL="https://app.vercel.app,https://preview.vercel.app"
+// In development (NODE_ENV !== "production") any http://localhost:<port>
+// origin is also allowed, so local frontends on any port work out of the box.
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+// cors / socket.io expect the (origin, callback) signature — a plain boolean
+// return would leave the middleware hanging on every request.
+const isAllowedOrigin = (origin, callback) => {
+  const allowed =
+    allowedOrigins.includes(origin) ||
+    (process.env.NODE_ENV !== "production" && /^http:\/\/localhost:\d+$/.test(origin || ""));
+  callback(null, allowed);
+};
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: isAllowedOrigin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
@@ -26,7 +44,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: isAllowedOrigin,
   credentials: true
 }));
 app.use(morgan("combined", {
@@ -62,6 +80,8 @@ import studentRoutes from "./routes/student.route.js"
 import monitorSystem from './routes/monitor_system.route.js'
 import SystemAnalytics from './routes/analytics.route.js'
 import interviewRoutes from './routes/interview.route.js';
+// Error handling
+import { notFound, errorHandler } from "./middlewares/error.middleware.js";
 //routes declaration
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/auth", authRoutes);
@@ -94,5 +114,9 @@ app.use("/api/v2/messages", personalChatMessageRouter);
 import applicationRouterV3 from './v3/routes/application.route.js'
 //routes declaration
 app.use("/api/v3/applications", applicationRouterV3);
+
+// 404 + centralized error handling (must be registered last)
+app.use(notFound);
+app.use(errorHandler);
 
 export { app, httpServer }

@@ -4,8 +4,14 @@ import { Logtail } from "@logtail/node";
 import { LogtailTransport } from "@logtail/winston";
 
 const isProduction = process.env.NODE_ENV === "production";
-const logtail = new Logtail(process.env.LOGTAIL_SOURCE_TOKEN);
-logtail.info("server started successfully");
+// Logtail must never be able to crash the app. Its background sync flushes
+// throw unhandled rejections when the token is invalid/revoked, which wedges
+// the whole process — so only create the client in production with a token
+// (dev builds never wire it in as a transport anyway).
+let logtail = null;
+if (isProduction && process.env.LOGTAIL_SOURCE_TOKEN) {
+  logtail = new Logtail(process.env.LOGTAIL_SOURCE_TOKEN);
+}
 const transports = [];
 
 // Development → log to files + console
@@ -31,17 +37,20 @@ if (!isProduction) {
   );
 }
 
-// Production → log to console + Logtail
+// Production → log to console + Logtail (only if a token is configured)
 if (isProduction) {
-  transports.push(
+  const productionTransports = [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json()
       ),
     }),
-    new LogtailTransport(logtail) // send logs to Logtail
-  );
+  ];
+  if (logtail) {
+    productionTransports.push(new LogtailTransport(logtail)); // send logs to Logtail
+  }
+  transports.push(...productionTransports);
 }
 
 const logger = winston.createLogger({

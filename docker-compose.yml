@@ -1,0 +1,93 @@
+# Campus Placement — Backend stack
+# Deployed separately from the frontend. Includes the MongoDB and Redis
+# services the API depends on, so a single `docker compose up --build`
+# brings up the whole backend.
+#
+# Note: if a MongoDB / Redis instance is already running on the host
+# (e.g. the Windows "MongoDB" service on 27017), override the host ports:
+#   MONGO_PORT=27018 REDIS_PORT=6380 docker compose up -d --build
+
+name: campusplace-backend
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: campusplace-mongodb
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: campusplace-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: campusplace-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-6005}:6005"
+    environment:
+      # Keep NODE_ENV=development so auth cookies are NOT marked Secure —
+      # Secure cookies are dropped by browsers over plain http.
+      # (See src/constants.js — secure: NODE_ENV === "production")
+      NODE_ENV: development
+      PORT: 6005
+      # Always the bundled MongoDB container. Don't reuse the dev .env's
+      # MONGODB_URI here (localhost would point at the container itself).
+      # To use an external DB (Atlas / host), edit this line directly or
+      # pass it with a dedicated env: docker compose run -e MONGODB_URI=...
+      MONGODB_URI: mongodb://mongodb:27017
+      DB_NAME: ${DB_NAME:-campusplace}
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:8080}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-change-me-in-production}
+      ACCESS_TOKEN_EXPIRY: ${ACCESS_TOKEN_EXPIRY:-1d}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-change-me-in-production}
+      REFRESH_TOKEN_EXPIRY: ${REFRESH_TOKEN_EXPIRY:-7d}
+      # Optional integrations — leave blank to run core features
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID:-}
+      LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      LOGTAIL_SOURCE_TOKEN: ${LOGTAIL_SOURCE_TOKEN:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  mongo_data:
+  redis_data:

@@ -7,7 +7,7 @@ dotenv.config({
 
 connectDB()// jab bhi ek asynchronous method complete hota hai to wo ek promise return krta hai.
 .then(()=>{
-    httpServer.on("error", ()=>{ 
+    httpServer.on("error", (error)=>{ 
         console.error("ERROR:",error);
         throw error
     })

@@ -12,7 +12,7 @@ const uploadResume = asyncHandler(async (req, res) => {
     const resumeLocalPath = req.files?.resume[0]?.path;
     if (!resumeLocalPath) return res.status(401).json(new ApiError(401, "Resume is missing!"));
     try {
-        const student = await Student.find({ student_id: req.user._id });
+        const student = await Student.findOne({ student_id: req.user._id });
         if (!student) {
             logger.info(`Student doesn't exists! Error while searching for student in upload resume.`);
             return res.status(404).json(new ApiError(404, "Student not found!"));
@@ -48,7 +48,7 @@ const uploadResume = asyncHandler(async (req, res) => {
 
 const deleteResume = asyncHandler(async (req, res) => {
     try {
-        const student = await Student.find({ student_id: req.user._id });
+        const student = await Student.findOne({ student_id: req.user._id });
 
         if (!student) {
             logger.info(`Student doesn't exists! Error while searching for student in delete resume.`);
@@ -61,15 +61,15 @@ const deleteResume = asyncHandler(async (req, res) => {
         }
         await deleteFromCloudinary(student.resume);
 
-        const response = await Student.findOneAndDelete({ student_id: req.user._id }, { $set: { resume: null } }, { new: true });
+        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: "" } }, { new: true });
 
         if (!response) {
             logger.info(`Something went wrong while deleting the resume in the database for the student with ID: ${student._id} and Name: ${student._id}!`)
-            return res.status(500).json(new ApiError(500, "Something went wrong while uploading the resume!"))
+            return res.status(500).json(new ApiError(500, "Something went wrong while deleting the resume!"))
         }
         logger.info(`Resume deleted successfully for the student with ID: ${student._id}!`)
-        return res.status(201)
-            .json(new ApiResponse(201, response, "Resume updated successfully!"))
+        return res.status(200)
+            .json(new ApiResponse(200, response, "Resume deleted successfully!"))
     } catch (error) {
         logger.error(`Error in delete resume : ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, `Server error`));
@@ -78,11 +78,17 @@ const deleteResume = asyncHandler(async (req, res) => {
 
 const getAllStudents = asyncHandler(async (req, res) => {
     const cacheKey = "students:all";
+    // Redis is a soft dependency — if it is down, fall back to the database.
+    let cached = null;
     try {
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-            return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All students fetched from cache!"));
-        }
+        cached = await redis.get(cacheKey);
+    } catch (err) {
+        logger.warn(`Redis unavailable, skipping students cache read: ${err.message}`);
+    }
+    if (cached) {
+        return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All students fetched from cache!"));
+    }
+    try {
         const students = await Student.find().populate("student_id").lean();
         if (!students || students.length === 0) {
             const studentsFromUserDocument = await User.find({ role: "student" }).lean();
@@ -93,7 +99,11 @@ const getAllStudents = asyncHandler(async (req, res) => {
             logger.info("Fetched all students, Returning all students data!")
             return res.status(200).json(new ApiResponse(200, studentsFromUserDocument, ""));
         }
-        await redis.set(cacheKey, JSON.stringify(students), "EX", 600);
+        try {
+            await redis.set(cacheKey, JSON.stringify(students), "EX", 600);
+        } catch (err) {
+            logger.warn(`Redis unavailable, skipping students cache write: ${err.message}`);
+        }
         return res.status(200).json(new ApiResponse(200, students, ""));
     } catch (err) {
         logger.error(`Error while fetching all students: ${err.message}`, { stack: err.stack });
@@ -106,7 +116,7 @@ const getOneStudent = asyncHandler(async (req, res) => {
     if (!nameOremail) return res.status(400).json(new ApiError(400, "value is missing"))
     try {
         const existedStudent = await User.findOne({ $or: [{ name: nameOremail }, { email: nameOremail }] })
-        if (!existedUser) {
+        if (!existedStudent) {
             logger.info(`Student with ${nameOremail} does not exists in the database!`)
             return res.status(409).json(new ApiError(409, "Student does not exists"));
         }
@@ -319,7 +329,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.files?.avatar[0]?.path;
     if (!avatarLocalPath) return res.status(401).json(new ApiError(401, "Avatar file is missing!"));
     try {
-        const student = await Student.find({ student_id: req.user._id });
+        const student = await Student.findOne({ student_id: req.user._id });
 
         if (!student) return res.status(404).json(new ApiError(404, "Student not found!"));
         if (student.avatar === "") {
@@ -333,7 +343,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
         await deleteFromCloudinary(student.avatar);
         const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
 
-        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { resume: uploadedAvatar.url } }, { new: true });
+        const response = await Student.findOneAndUpdate({ student_id: req.user._id }, { $set: { avatar: uploadedAvatar.url } }, { new: true });
 
         if (!response) {
             logger.info(`Error while updating avatar of a student! Student ID: ${req?.user._id}`);

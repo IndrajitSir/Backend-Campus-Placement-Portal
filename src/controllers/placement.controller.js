@@ -32,17 +32,27 @@ const newPlacement = asyncHandler(async (req, res) => {
 
 const getAllPlacements = asyncHandler(async (req, res) => {
     const cacheKey = "placement:all";
+    // Redis is a soft dependency — if it is down, fall back to the database.
+    let cached = null;
     try {
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-            return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All placement posts fetched from cache!"));
-        }
+        cached = await redis.get(cacheKey);
+    } catch (err) {
+        logger.warn(`Redis unavailable, skipping placements cache read: ${err.message}`);
+    }
+    if (cached) {
+        return res.status(200).json(new ApiResponse(200, JSON.parse(cached), "All placement posts fetched from cache!"));
+    }
+    try {
         const placements = await Placement.find().lean();
         if (!Array.isArray(placements) && !placements.length > 0) {
             logger.info("There is no placement post!!");
             return res.status(204).json(new ApiError(204, "No placement post found!"))
         }
-        await redis.set(cacheKey, JSON.stringify(placements), "EX", 600);
+        try {
+            await redis.set(cacheKey, JSON.stringify(placements), "EX", 600);
+        } catch (err) {
+            logger.warn(`Redis unavailable, skipping placements cache write: ${err.message}`);
+        }
         return res.status(200).json(new ApiResponse(200, placements, "All placement posts fetched!"));
     } catch (err) {
         logger.error(`Error in get all placements: ${err.message}`, { stack: err.stack });

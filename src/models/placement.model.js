@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import redis from "../utils/redisClient.js";
+import logger from "../utils/Logger/logger.js";
 
 const placementSchema = new Schema({
   company_name: { type: String, required: true },
@@ -15,21 +16,25 @@ const placementSchema = new Schema({
 placementSchema.index({created_by: 1});
 
 function removeCache(){
-  redis.exists("placement:all", (err, reply) => {
-    if (err) {
-      logger.error("Error checking redis key(placement:all) existence in placement schema:", err);
-    } else if (reply === 1) {
-      redis.del("placement:all", (delErr, delReply) => {
-        if (delErr) {
-          logger.error("Error while deleting redis key(placement:all) in placement schema:", delErr);
-        } else {
-          logger.info("redis key(placement:all) deleted in placement schema", delReply);
-        }
-      });
-    } else {
-      console.log("redis key(placement:all) does not exists!");
-    }
-  });
+  try {
+    redis.exists("placement:all", (err, reply) => {
+      if (err) {
+        logger.error("Error checking redis key(placement:all) existence in placement schema:", err);
+      } else if (reply === 1) {
+        redis.del("placement:all", (delErr, delReply) => {
+          if (delErr) {
+            logger.error("Error while deleting redis key(placement:all) in placement schema:", delErr);
+          } else {
+            logger.info("redis key(placement:all) deleted in placement schema", delReply);
+          }
+        });
+      } else {
+        console.log("redis key(placement:all) does not exists!");
+      }
+    });
+  } catch (err) {
+    logger.error("Error in removeCache for placement schema:", err);
+  }
 }
 placementSchema.pre("save", async function (next) {
   if (typeof this.created_by === "string") {

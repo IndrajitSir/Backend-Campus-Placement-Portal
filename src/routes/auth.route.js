@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { register, login } from '../controllers/auth.controller.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import { registerSchema, loginSchema } from '../validations/auth.validation.js';
 import passport from '../config/passport.js';
 const router = Router();
 
-router.route("/register").post(register);
-router.route("/login").post(login);
+router.route("/register").post(validate(registerSchema), register);
+router.route("/login").post(validate(loginSchema), login);
 
 // **Google Auth Routes**
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

@@ -1,0 +1,20 @@
+name: Keep backend awake (Render free tier)
+
+# Render's free instances sleep after ~15 minutes without traffic, which
+# makes the first request after idle fail with a connection error while the
+# cold start happens. Pinging the healthcheck every 10 minutes keeps the
+# instance warm so real users never hit the sleep window.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend healthcheck
+        run: |
+          curl -fsS -o /dev/null -w "healthcheck: %{http_code} in %{time_total}s\n" \
+            https://backend-campus-placement-portal.onrender.com/api/v1/healthcheck || true

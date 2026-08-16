@@ -16,5 +16,8 @@ connectDB()// jab bhi ek asynchronous method complete hota hai to wo ek promise 
         })
     })
     .catch((err) => {
-        console.log("MongoDB connection Failed", err);
+        console.log("MongoDB connection Failed", err?.message || err);
+        // Exit so the failure is loud and Render doesn't wait for a port that
+        // will never open.
+        process.exit(1);
     });

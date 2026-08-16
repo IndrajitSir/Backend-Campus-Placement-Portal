@@ -5,9 +5,11 @@ const userSchema = new Schema(
     {
         name: { type: String, required: true },
         email: { type: String, unique: true, required: true },
-        password: { type: String, required: true },
+        password: { type: String },
         phoneNumber: { type: Number, default: null },
-        role: { type: String, enum: ["super_admin", "admin", "placement_staff", "student"], required: true },
+        role: { type: String, enum: ["super_admin", "admin", "placement_staff", "student"], required: true, default: "student" },
+        googleId: { type: String, unique: true, sparse: true },
+        githubId: { type: String, unique: true, sparse: true },
         refreshToken: { type: String, default: null },
         dateOfBirth: { type: Date, default: null },
         gender: { type: String, default: null },

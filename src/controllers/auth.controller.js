@@ -94,4 +94,17 @@ const registerAdmin = asyncHandler(async (req, res) => {
   return res.status(201).json(new ApiResponse(201, { createdAdmin }, "Admin created successfully"));
 });
 
-export { login, register, registerAdmin };
+const socialLoginSuccess = asyncHandler(async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json(new ApiError(401, "Authentication failed"));
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(req.user);
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .redirect(`${process.env.FRONTEND_URL}/home`);
+});
+
+export { login, register, registerAdmin, socialLoginSuccess }

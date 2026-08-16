@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { register, login, socialLoginSuccess } from '../controllers/auth.controller.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import { registerSchema, loginSchema } from '../validations/auth.validation.js';
 import passport from '../config/passport.js';
 const router = Router();
 

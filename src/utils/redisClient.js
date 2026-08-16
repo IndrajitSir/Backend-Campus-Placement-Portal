@@ -11,6 +11,10 @@ const redis = new Redis(process.env.REDIS_URL, {
     retryStrategy: (times) => Math.min(times * 500, 2000),
 });
 
+// Throttle repeated Redis error logs so a down Redis doesn't spam the log stream
+let lastLogErrorTime = 0;
+const LOG_ERROR_INTERVAL = 30000; // ms
+
 redis.on("connect", () => {
     logger.info("!!Connected to Redis!!")
     console.log("!!Connected to Redis!!")

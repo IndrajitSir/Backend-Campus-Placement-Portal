@@ -5,10 +5,13 @@ import logger from './Logger/logger.js'
 // maxRetriesPerRequest: 1 makes commands reject immediately when Redis is
 // down — controllers then fall back to the database. Reconnection still
 // happens in the background via retryStrategy.
-const redis = new Redis(process.env.REDIS_URL, {
+const redisUrl = process.env.REDIS_URL;
+const redis = new Redis(redisUrl || "redis://127.0.0.1:6379", {
     maxRetriesPerRequest: 1,
     enableOfflineQueue: false,
-    retryStrategy: (times) => Math.min(times * 500, 2000),
+    // Only keep retrying when a URL is explicitly configured. If REDIS_URL is
+    // unset, fail once quietly and let the cache layer fall back to MongoDB.
+    retryStrategy: redisUrl ? (times) => Math.min(times * 500, 2000) : null,
 });
 
 // Throttle repeated Redis error logs so a down Redis doesn't spam the log stream

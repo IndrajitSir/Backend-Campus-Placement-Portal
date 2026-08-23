@@ -56,5 +56,7 @@ export const errorHandler = (err, req, res, next) => {
     statusCode,
     message,
     data: null,
+    // Never expose stack traces or internal paths to the client
+    ...(process.env.NODE_ENV !== "production" && err?.stack ? { stack: err.stack } : {}),
   });
 };

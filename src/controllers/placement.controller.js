@@ -8,18 +8,10 @@ import mongoose, { Schema } from "mongoose";
 
 const newPlacement = asyncHandler(async (req, res) => {
     const { company_name, job_title, description, eligibility, location, last_date } = req.body;
-    if ([company_name, job_title, description, eligibility, location, last_date].some((field) => !field || field.toString().trim() === "")) {
-        return res.status(400).json(new ApiError(400, "All fields are required"));
-    }
-
-    const date = new Date(last_date);
-    if (isNaN(date.getTime())) {
-        return res.status(400).json(new ApiError(400, "Invalid last_date format"));
-    }
 
     try {
         const createdPlacement = await Placement.create({
-            company_name, job_title, description, eligibility, location, last_date: date,
+            company_name, job_title, description, eligibility, location, last_date: new Date(last_date),
             created_by: req.user._id
         });
         if (!createdPlacement) {
@@ -91,23 +83,22 @@ const deletePlacement = asyncHandler(async (req, res) => {
 
 const updatePlacement = asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const { newPlacementPost } = req.body;
     if (!id) return res.status(400).json(new ApiError(400, "ID is missing"));
-    if (!newPlacementPost) return res.status(400).json(new ApiError(400, "Updated Placement Post is missing"));
     try {
-        if (!mongoose.Types.ObjectId.isValid(id)) { return res.status(400).json(new ApiError(400, "Invalid ID format")) }
+        if (!mongoose.Types.ObjectId.isValid(id)) { return res.status(400).json(new ApiError(400, "Invalid ID format")); }
         const placement = await Placement.findById(id);
         if (!placement) {
-            logger.info(`Thers is no placement post for this id ${id}! Hence the placement post cannot be updated.`);
-            return res.status(204).json(new ApiError(204, "Placement post not found!"));
+            logger.info(`There is no placement post for this id ${id}!`);
+            return res.status(404).json(new ApiError(404, "Placement post not found!"));
         }
-        const updatedPlacement = await Placement.findByIdAndUpdate(id, { newPlacementPost }, { new: true });
+        // req.body is already validated & sanitized by Joi + sanitizeBody
+        const updatedPlacement = await Placement.findByIdAndUpdate(id, { $set: req.body }, { new: true, runValidators: true });
         if (!updatedPlacement) {
             logger.info(`Something went wrong while updating placement post! whose ID: ${id}`);
-            return res.status(500).json(new ApiError(500, "Something went wrong while updating placement post!"))
+            return res.status(500).json(new ApiError(500, "Something went wrong while updating placement post!"));
         }
         logger.info(`A placement post with id ${id} updated successfully!`);
-        return res.status(204).json(new ApiResponse(204, updatedPlacement, "Placement Post Updated"));
+        return res.status(200).json(new ApiResponse(200, updatedPlacement, "Placement Post Updated"));
     } catch (error) {
         logger.error(`Error in update placement: ${error.message}`, { stack: error.stack });
         return res.status(500).json(new ApiError(500, "Server error"));

@@ -6,5 +6,6 @@ export const options = {
     path: "/",
 }
 export const activeRooms = new Set();
+export const roomParticipants = new Map();
 export const timers = {};
 export const userSocketMap = new Map();

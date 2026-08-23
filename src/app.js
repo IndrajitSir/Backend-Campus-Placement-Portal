@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import passport from "./config/passport.js"
@@ -8,6 +10,8 @@ import logger from "./utils/Logger/logger.js";
 import { createServer } from "node:http";
 import { Server } from "socket.io"
 import { setupSocket } from "./socket/socket.js";
+import { apiLimiter } from "./middlewares/rateLimiter.js";
+import { sanitizeBody } from "./middlewares/sanitizeBody.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,6 +55,16 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 }));
+
+// --- Security headers (helmet) — must come early so every response gets them ---
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow inline scripts/styles for Vite dev
+  crossOriginEmbedderPolicy: false,
+}));
+
+// Prevent NoSQL injection via query/body operators ($gt, $ne, etc.)
+app.use(mongoSanitize({ replaceWith: "_" }));
+
 app.use(morgan("combined", {
   stream: {
     write: (message) => logger.info(message.trim())
@@ -64,10 +78,17 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+// Rate limit all API routes
+app.use("/api", apiLimiter);
+
 app.use(express.json({ limit: "16kb" }))
 app.use(express.urlencoded({ extended: true, limit: "16kb" }))
 app.use(express.static("public"))
 app.use(cookieParser());
+
+// Strip privileged fields from request bodies (role, isAdmin, etc.)
+app.use("/api", sanitizeBody);
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());

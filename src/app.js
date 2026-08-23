@@ -105,6 +105,7 @@ import fakeDataRouter from "./fakedata/fakeData.js"
 import monitorSystem from './routes/monitor_system.route.js'
 import SystemAnalytics from './routes/analytics.route.js'
 import interviewRoutes from './routes/interview.route.js';
+import codeExecutionRoutes from './routes/codeExecution.route.js';
 // Error handling
 import { notFound, errorHandler } from "./middlewares/error.middleware.js";
 //routes declaration
@@ -119,6 +120,7 @@ app.use("/api/v1/fake-data", fakeDataRouter);
 app.use("/api/v1/system", monitorSystem);
 app.use("/api/v1/analytics", SystemAnalytics);
 app.use('/api/v1/interview', interviewRoutes);
+app.use('/api/v1/code-execution', codeExecutionRoutes);
 // ------------------------ V2 -------------------------------
 // Routes import
 import userRouter from './v2/routes/users.route.js'

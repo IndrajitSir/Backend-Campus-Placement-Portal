@@ -10,6 +10,21 @@
 name: campusplace-backend
 
 services:
+  piston:
+    image: ghcr.io/engineer-man/piston:latest
+    container_name: campusplace-piston
+    restart: unless-stopped
+    ports:
+      - "${PISTON_PORT:-2000}:2000"
+    volumes:
+      - piston_packages:/piston/packages
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   mongodb:
     image: mongo:7
     container_name: campusplace-mongodb
@@ -76,10 +91,13 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       LOGTAIL_SOURCE_TOKEN: ${LOGTAIL_SOURCE_TOKEN:-}
+      PISTON_API_URL: http://piston:2000/api/v2/piston/execute
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      piston:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
@@ -91,3 +109,4 @@ services:
 volumes:
   mongo_data:
   redis_data:
+  piston_packages:

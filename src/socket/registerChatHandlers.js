@@ -55,6 +55,30 @@ export function registerChatHandlers(io, socket) {
         if (ack) { return ack({ success: true }); }
     });
 
+    // --- Message reactions ---
+    socket.on("chat:react", ({ roomId, messageId, emoji }, ack) => {
+        if (!isValidRoom(roomId)) {
+            if (ack) { return ack({ success: false, message: `Room not found: ${roomId}` }); }
+            return;
+        }
+        if (!messageId || typeof messageId !== "string") {
+            if (ack) { return ack({ success: false, message: "Invalid messageId" }); }
+            return;
+        }
+        if (!emoji || typeof emoji !== "string" || emoji.length > 4) {
+            if (ack) { return ack({ success: false, message: "Invalid emoji" }); }
+            return;
+        }
+        const senderUser = socket.data.user;
+        io.to(roomId).emit("chat:reaction", {
+            messageId,
+            emoji,
+            userId: senderUser?._id,
+            userName: senderUser?.name || socket.data.name,
+        });
+        if (ack) { return ack({ success: true }); }
+    });
+
     socket.on("chat:timerStarts", ({ roomId }, ack) => {
         if (!isValidRoom(roomId)) {
             if (ack) { return ack({ success: false, message: `Room not found: ${roomId}` }); }

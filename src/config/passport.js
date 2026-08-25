@@ -3,6 +3,11 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth2';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import { User } from '../models/user.models.js';
 import { Student } from '../models/student.model.js';
+import dotenv from "dotenv";
+dotenv.config({
+    path: "./.env",
+    override: true,
+});
 
 passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser(async (id, done) => {

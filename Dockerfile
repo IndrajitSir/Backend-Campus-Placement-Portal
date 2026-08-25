@@ -19,3 +19,20 @@ EXPOSE 6005
 # image is ignored (see .dockerignore); runtime config comes from environment
 # variables passed by docker-compose, which take precedence over .env.
 CMD ["npm", "start"]
+
+# FOR PRODUCTION
+# FROM node:22-alpine
+
+# WORKDIR /app
+
+# COPY package*.json ./
+
+# RUN npm ci --omit=dev
+
+# COPY . .
+
+# ENV NODE_ENV=production
+
+# EXPOSE 6005
+
+# CMD ["npm", "start"]

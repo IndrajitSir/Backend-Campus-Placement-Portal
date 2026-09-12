@@ -3,6 +3,7 @@ import { User } from "../../models/user.models.js";
 import { Student } from "../../models/student.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
+import logger from "../../utils/Logger/logger.js";
 
 const getAllStudents = asyncHandler(async (req, res) => {
     const page = parseInt(req.query?.page) || 1;
@@ -24,7 +25,7 @@ const getAllStudents = asyncHandler(async (req, res) => {
     ));
 });
 
-export { getAllStudents }
+export { getAllStudents, getPublicStudentProfile }
 
 const isUrl = (value) => {
     if (!value || typeof value !== "string") return false;

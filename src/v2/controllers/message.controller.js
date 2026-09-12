@@ -54,4 +54,62 @@ const getConversation = asyncHandler(async (req, res) => {
   }).sort("createdAt").populate("sender", "name").populate("receiver", "name");
   return res.status(200).json(new ApiResponse(200, messages, ""));
 })
-export { sendMessage, getConversation }
+const getConversations = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  try {
+    // Find all chat documents where this user is sender or receiver
+    const docs = await ChatMessage.find({
+      $or: [{ sender: userId }, { receiver: userId }]
+    })
+      .sort({ updatedAt: -1 })
+      .populate("sender", "name email")
+      .populate("receiver", "name email");
+
+    // Build a map of unique conversation partners
+    const conversationMap = new Map();
+
+    for (const doc of docs) {
+      const senderId = doc.sender?._id?.toString();
+      const receiverId = doc.receiver?._id?.toString();
+      const otherUserId = senderId === userId ? receiverId : senderId;
+      const otherUser = senderId === userId ? doc.receiver : doc.sender;
+
+      if (!otherUser || !otherUserId) continue;
+
+      // Only keep the most recent conversation per partner
+      if (!conversationMap.has(otherUserId)) {
+        const lastMsg = doc.message?.[doc.message.length - 1];
+        // Count unread messages (messages where sender is the other user and isRead is false)
+        let unreadCount = 0;
+        for (const m of doc.message) {
+          const msgSenderId = senderId === userId ? receiverId : senderId;
+          if (msgSenderId !== userId && m.isRead === false) {
+            unreadCount++;
+          }
+        }
+
+        conversationMap.set(otherUserId, {
+          user: {
+            _id: otherUserId,
+            name: otherUser.name,
+            email: otherUser.email,
+          },
+          lastMessage: lastMsg?.text || "",
+          lastMessageAt: lastMsg?.sentAt || doc.updatedAt,
+          unreadCount,
+        });
+      }
+    }
+
+    // Sort by last message time descending
+    const conversations = Array.from(conversationMap.values())
+      .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+
+    return res.status(200).json(new ApiResponse(200, conversations, "Conversations fetched!"));
+  } catch (err) {
+    logger.error("Error fetching conversations: ", err);
+    return res.status(500).json(new ApiError(500, "Server Error!"));
+  }
+});
+
+export { sendMessage, getConversation, getConversations }

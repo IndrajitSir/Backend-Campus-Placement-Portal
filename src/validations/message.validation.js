@@ -31,3 +31,11 @@ export const getConversationValidation = [
     .isHexadecimal()
     .withMessage("Receiver ID must be a valid hexadecimal string"),
 ];
+
+export const getConversationsValidation = [
+  param("userId")
+    .isLength({ min: 24, max: 24 })
+    .withMessage("Invalid user ID format")
+    .isHexadecimal()
+    .withMessage("User ID must be a valid hexadecimal string"),
+];

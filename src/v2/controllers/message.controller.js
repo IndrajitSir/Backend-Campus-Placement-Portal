@@ -8,8 +8,13 @@ import logger from "../../utils/Logger/logger.js";
 const sendMessage = asyncHandler(async (req, res) => {
   const { senderId, receiverId, text } = req.body;
   const receiverSocketId = getSocketId(receiverId);
+  const senderSocketId = getSocketId(senderId);
   try {
     let msg = await ChatMessage.findOne({ sender: senderId, receiver: receiverId });
+    if (!msg) {
+      // Also check the reverse direction so an existing thread is reused
+      msg = await ChatMessage.findOne({ sender: receiverId, receiver: senderId });
+    }
     if (msg?._id) {
       msg.message.push({ text });
       await msg.save();
@@ -19,12 +24,18 @@ const sendMessage = asyncHandler(async (req, res) => {
       if (receiverSocketId) {
         req.io.to(receiverSocketId).emit("personalChat:newMessage", msg);
       }
+      if (senderSocketId) {
+        req.io.to(senderSocketId).emit("personalChat:newMessage", msg);
+      }
       return res.status(200).json(new ApiResponse(200, addedMessage, "Message sent!"));
     }
     msg = await ChatMessage.create({ sender: senderId, receiver: receiverId, message: [{ text }] });
     await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
     if (receiverSocketId) {
       req.io.to(receiverSocketId).emit("personalChat:newMessage", msg);
+    }
+    if (senderSocketId) {
+      req.io.to(senderSocketId).emit("personalChat:newMessage", msg);
     }
     return res.status(201).json(new ApiResponse(201, msg, ""));
   } catch (err) {

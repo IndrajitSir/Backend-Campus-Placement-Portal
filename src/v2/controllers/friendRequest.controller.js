@@ -39,7 +39,7 @@ const sendFrindRequest = asyncHandler(async (req, res) => {
 const incomingFrindRequest = asyncHandler(async (req, res) => {
     try {
         const requests = await FriendRequest.find({ receiver: req.user._id, status: "pending" }).populate("sender", "name avatar");
-        return res.status(200).json(new ApiResponse(200, { requests, userId: req.user._id, username: req.user.name }, "You have incoming friend requests!"));
+        return res.status(200).json(new ApiResponse(200, requests, "You have incoming friend requests!"));
     } catch (err) {
         logger.info("Error at incoming friend request: ", err);
         return res.status(500).json(new ApiError(500, "Server Error!"));

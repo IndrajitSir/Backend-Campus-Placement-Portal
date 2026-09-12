@@ -33,6 +33,9 @@ export function setupSocket(io) {
         userConnectionCount.set(userId, connCount);
 
         addUser(userId, socket.id);
+        // Join a per-user room so server-side code can push events (e.g.
+        // `notification:new`) to every socket of this user via io.to(userId).
+        socket.join(userId);
         logger.info(`Socket connected: user=${userId} role=${role} socket=${socket.id}`);
 
         // NOTE: live logs are no longer pushed over socket.io. Admins now

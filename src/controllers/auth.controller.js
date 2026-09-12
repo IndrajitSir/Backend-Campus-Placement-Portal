@@ -8,7 +8,10 @@ import { generateAccessAndRefreshTokens } from "../utils/generateToken.js";
 import logger from "../utils/Logger/logger.js";
 
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
+  // Public registration is student-only. Admins/staff are created via the
+  // /api/v1/admin/* routes, so the client-supplied role is never trusted here.
+  const role = "student";
 
   const existedUser = await User.findOne({ email });
   if (existedUser) {
@@ -96,7 +99,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
 
 const socialLoginSuccess = asyncHandler(async (req, res) => {
     if (!req.user) {
-        return res.status(401).json(new ApiError(401, "Authentication failed"));
+        return res.status(401).json({ success: false, statusCode: 401, message: "Authentication failed", data: null });
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(req.user);

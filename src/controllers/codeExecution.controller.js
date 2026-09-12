@@ -88,6 +88,11 @@ export const executeCode = asyncHandler(async (req, res) => {
     /process\.exit/i,
     /rm\s+-rf/i,
     /format\s+[a-z]:/i,
+    /\bopen\s*\(/i,
+    /require\s*\(\s*['"]fs['"]/i,
+    /from\s+os\s+import/i,
+    /import\s+os\b/i,
+    /\bfs\.|-r\b.*--no-preserve-root/i,
   ];
   if (dangerousPatterns.some(p => p.test(code))) {
     logger.warn(`Blocked potentially dangerous code from user ${userId} (language: ${language})`);

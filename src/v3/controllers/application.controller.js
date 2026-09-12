@@ -2,7 +2,6 @@ import { Application } from "../../models/application.model.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-
 const getCandidatesByStatus = asyncHandler(async (req, res) => {
   const status = req.params.candidateStatus;
   const validStatuses = ["applied", "selected", "shortlisted", "rejected"];
@@ -109,4 +108,52 @@ const getCandidatesByStatus = asyncHandler(async (req, res) => {
   );
 });
 
-export { getCandidatesByStatus };
+const CSV_COLUMNS = ["Application ID", "Student Name", "Student Email", "Company", "Job Title", "Status", "Applied Date"];
+const MAX_CSV_ROWS = 5000;
+
+// CSV escaping: wrap in quotes and double any internal quotes.
+const csvEscape = (value) => {
+  if (value === null || value === undefined) return '""';
+  const str = value instanceof Date ? value.toISOString() : String(value);
+  return `"${str.replace(/"/g, '""')}"`;
+};
+
+const exportApplicationsCsv = asyncHandler(async (req, res) => {
+  const status = req.query.status;
+  const validStatuses = ["applied", "shortlisted", "selected", "rejected"];
+
+  if (status && !validStatuses.includes(status)) {
+    return res.status(400).json(new ApiError(400, "Invalid status filter"));
+  }
+
+  const filter = status ? { status } : {};
+  const applications = await Application.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(MAX_CSV_ROWS)
+    .populate("user_id", "name email")
+    .populate("placement_id", "company_name job_title");
+
+  const rows = applications.map((app) => [
+    app._id?.toString(),
+    app.user_id?.name,
+    app.user_id?.email,
+    app.placement_id?.company_name,
+    app.placement_id?.job_title,
+    app.status,
+    app.createdAt,
+  ]);
+
+  const csv = [
+    CSV_COLUMNS.map(csvEscape).join(","),
+    ...rows.map((row) => row.map(csvEscape).join(",")),
+  ].join("\n");
+
+  const dateStamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const fileName = `applications-${status || "all"}-${dateStamp}.csv`;
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  return res.status(200).send(csv);
+});
+
+export { getCandidatesByStatus, exportApplicationsCsv };

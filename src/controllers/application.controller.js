@@ -3,6 +3,7 @@ import { Application } from "../models/application.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Placement } from "../models/placement.model.js";
+import { createAndEmitNotification } from "../utils/notify.js";
 import logger from "../utils/Logger/logger.js";
 
 const applyForPlacement = asyncHandler(async (req, res) => {
@@ -114,6 +115,12 @@ const getRejectedCandidates = asyncHandler(async (_, res) => {
     }
 });
 
+const NOTIFIABLE_STATUSES = {
+    shortlisted: "Application shortlisted",
+    selected: "Application selected",
+    rejected: "Application rejected",
+};
+
 const updateStatus = asyncHandler(async (req, res) => {
     const { newStatus, recordID } = req.body;
     try {
@@ -127,6 +134,24 @@ const updateStatus = asyncHandler(async (req, res) => {
             logger.info(`Something went wrong while updating status for applicant's application!`);
             return res.status(500).json(new ApiError(500, "Error while updating status of student application!"));
         }
+
+        // Notify the student when their application moves to a decisive status.
+        // Failures here must never affect the update response.
+        if (NOTIFIABLE_STATUSES[newStatus]) {
+            try {
+                const placement = await Placement.findById(record.placement_id).select("company_name job_title");
+                await createAndEmitNotification(req.io, {
+                    userId: record.user_id,
+                    type: "application_status",
+                    title: NOTIFIABLE_STATUSES[newStatus],
+                    body: `Your application to ${placement?.company_name || "a company"} (${placement?.job_title || "a role"}) was ${newStatus}.`,
+                    link: "/home/dashboard/applied-jobs",
+                });
+            } catch (notifyErr) {
+                logger.error(`Failed to send application status notification: ${notifyErr?.message}`);
+            }
+        }
+
         logger.info(`Status updated of student application!`);
         return res.status(200).json(new ApiResponse(200, updatedStatus, "Status updated of student application!"))
     } catch (error) {

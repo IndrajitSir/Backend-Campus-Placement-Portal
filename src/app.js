@@ -44,6 +44,9 @@ const io = new Server(httpServer, {
   }
 });
 setupSocket(io);
+// Expose io globally so background jobs (e.g. deadline reminders) can emit
+// socket events without needing the httpServer context.
+global.__io = io;
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -88,7 +91,26 @@ app.use(cookieParser());
 
 // Strip privileged fields from request bodies (role, isAdmin, etc.)
 app.use("/api", sanitizeBody);
-app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
+// Session secret must be explicitly configured in production; a predictable
+// dev-only default keeps local development frictionless.
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+  logger.warn("SESSION_SECRET is not set in production — sessions will be signed with an insecure default");
+}
+const sessionSecret =
+  process.env.SESSION_SECRET || (process.env.NODE_ENV !== "production" ? "dev-secret" : undefined);
+
+app.use(session({
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  proxy: true,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+  },
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -128,12 +150,16 @@ import placementRouter from './v2/routes/placements.route.js'
 import applicationRouter from './v2/routes/application.route.js'
 import friendRequestRouter from './v2/routes/friendRequest.route.js'
 import personalChatMessageRouter from './v2/routes/message.route.js'
+import notificationRouter from './v2/routes/notification.route.js'
+import bookmarkRouter from './v2/routes/bookmark.route.js'
 //routes declaration
 app.use("/api/v2/users", userRouter);
 app.use("/api/v2/student", studentRouter);
 app.use("/api/v2/placements", placementRouter);
 app.use("/api/v2/applications", applicationRouter);
 app.use("/api/v2/friend-request", friendRequestRouter);
+app.use("/api/v2/notifications", notificationRouter);
+app.use("/api/v2/bookmarks", bookmarkRouter);
 app.use("/api/v2/messages", personalChatMessageRouter);
 //------------------------- V3 ---------------------------------
 // Routes import

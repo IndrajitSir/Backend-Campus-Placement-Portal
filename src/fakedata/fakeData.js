@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import logger from "../utils/Logger/logger.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { verifyUserWithRole } from "../middlewares/verifyUser.middleware.js";
 import { User } from "../models/user.models.js";
 import { Placement } from "../models/placement.model.js";
 import { Student } from "../models/student.model.js";
@@ -200,6 +201,18 @@ async function generateFakeData(req, res) {
 }
 
 const router = Router();
+
+// Fake-data generation must never run in production unless explicitly enabled,
+// and even then only for super admins.
+const fakeDataEnvGuard = (req, res, next) => {
+  if (process.env.NODE_ENV === "production" && process.env.ENABLE_FAKE_DATA !== "true") {
+    return res.status(403).json(new ApiResponse(403, null, "Fake data endpoints are disabled in production"));
+  }
+  next();
+};
+
+router.use(verifyUserWithRole(["super_admin"]), fakeDataEnvGuard);
+
 router.route("/placements").post(generateFakePlacements);
 router.route("/students").post(generateFakeStudents);
 router.route("/all").post(generateFakeData);

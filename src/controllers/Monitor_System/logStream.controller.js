@@ -10,11 +10,17 @@ const ALLOWED_ROLES = ["admin", "super_admin"];
  * authenticated by the httpOnly `accessToken` cookie. The query-param and
  * header variants are kept as fallbacks for non-browser clients / testing.
  */
-const extractToken = (req) =>
-  req.cookies?.accessToken ||
-  req.header("Authorization")?.replace("Bearer ", "") ||
-  req.query?.token ||
-  null;
+const extractToken = (req) => {
+  // The query-param variant is a dev/test convenience only; in production the
+  // token must come from the httpOnly cookie or the Authorization header.
+  const allowQueryToken = process.env.NODE_ENV !== "production";
+  return (
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "") ||
+    (allowQueryToken ? req.query?.token : null) ||
+    null
+  );
+};
 
 /**
  * Server-Sent Events stream of live application logs for admins.

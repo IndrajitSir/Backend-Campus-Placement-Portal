@@ -43,7 +43,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     const addedMessage = msg.message[msg.message.length - 1];
     return res.status(201).json(new ApiResponse(201, { messageId: addedMessage._id }, "Message sent!"));
   } catch (err) {
-    logger.info("Error at send message: ", err);
+    logger.error("Error at send message: ", err?.message || err);
     return res.status(500).json(new ApiError(500, "Server Error!"));
   }
 });

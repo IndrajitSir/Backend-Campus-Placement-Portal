@@ -25,8 +25,6 @@ const getAllStudents = asyncHandler(async (req, res) => {
     ));
 });
 
-export { getAllStudents, getPublicStudentProfile }
-
 const isUrl = (value) => {
     if (!value || typeof value !== "string") return false;
     try {

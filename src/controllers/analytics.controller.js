@@ -6,8 +6,27 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import logger from "../utils/Logger/logger.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const getDateMatchPipeline = (req, dateField = "createdAt") => {
+    const { year, month } = req.query;
+    if ((!year || year === "all") && (!month || month === "all")) return [];
+
+    const conditions = [
+        { $ne: [`$${dateField}`, null] }
+    ];
+
+    if (year && year !== "all") {
+        conditions.push({ $eq: [{ $year: `$${dateField}` }, parseInt(year, 10)] });
+    }
+    if (month && month !== "all") {
+        conditions.push({ $eq: [{ $month: `$${dateField}` }, parseInt(month, 10)] });
+    }
+
+    return [{ $match: { $expr: { $and: conditions } } }];
+};
+
 const getUserCountByRole = asyncHandler(async (req, res) => {
     const data = await User.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         { $group: { _id: "$role", count: { $sum: 1 } } }
     ]);
     logger.info("Successfully fetched users count by role!");
@@ -16,6 +35,7 @@ const getUserCountByRole = asyncHandler(async (req, res) => {
 
 const getStudentsPerDepartment = asyncHandler(async (req, res) => {
     const data = await Student.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         { $group: { _id: "$department", count: { $sum: 1 } } }
     ]);
     logger.info("Successfully fetched Students of each Department!");
@@ -24,6 +44,7 @@ const getStudentsPerDepartment = asyncHandler(async (req, res) => {
 
 const getSelectedStudentsPerDepartment = asyncHandler(async (req, res) => {
     const data = await Student.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $lookup: {
                 from: "applications",
@@ -121,6 +142,7 @@ const getSelectedStudentsPerDepartment = asyncHandler(async (req, res) => {
 
 const getPlacementsCreatedPerMonth = asyncHandler(async (req, res) => {
     const data = await Placement.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $group: {
                 _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
@@ -135,6 +157,7 @@ const getPlacementsCreatedPerMonth = asyncHandler(async (req, res) => {
 
 const getApplicationsPerPlacement = asyncHandler(async (req, res) => {
     const data = await Application.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $lookup: {
                 from: "placements",
@@ -158,6 +181,7 @@ const getApplicationsPerPlacement = asyncHandler(async (req, res) => {
 
 const getApplicationStatusSummary = asyncHandler(async (req, res) => {
     const data = await Application.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $group: {
                 _id: "$status",
@@ -171,6 +195,7 @@ const getApplicationStatusSummary = asyncHandler(async (req, res) => {
 
 const getResumeUploadStats = asyncHandler(async (req, res) => {
     const data = await Student.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $group: {
                 _id: { $cond: [{ $ne: ["$resume", ""] }, "Has Resume", "No Resume"] },
@@ -184,6 +209,7 @@ const getResumeUploadStats = asyncHandler(async (req, res) => {
 
 const getStudentsByLocation = asyncHandler(async (req, res) => {
     const data = await Student.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $group: {
                 _id: "$location",
@@ -198,6 +224,7 @@ const getStudentsByLocation = asyncHandler(async (req, res) => {
 
 const getStudentApprovalStats = asyncHandler(async (req, res) => {
     const data = await Student.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $group: {
                 _id: "$approved",
@@ -211,6 +238,7 @@ const getStudentApprovalStats = asyncHandler(async (req, res) => {
 
 const getTopActiveStudents = asyncHandler(async (req, res) => {
     const data = await Application.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         {
             $group: {
                 _id: "$user_id",
@@ -242,6 +270,7 @@ const getTopActiveStudents = asyncHandler(async (req, res) => {
 
 const totalUsersCount = asyncHandler(async(req,res)=>{
     const data = await User.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         { $group: { _id: "", count: { $sum: 1 } } }
     ]);
     logger.info("Successfully fetched total users count!");
@@ -250,6 +279,7 @@ const totalUsersCount = asyncHandler(async(req,res)=>{
 
 const totalApplicationsCount = asyncHandler(async(req,res)=>{
     const data = await Application.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         { $group: { _id: "", count: { $sum: 1 } } }
     ]);
     logger.info("Successfully fetched total Application count!");
@@ -258,6 +288,7 @@ const totalApplicationsCount = asyncHandler(async(req,res)=>{
 
 const totalPlacementsCount = asyncHandler(async(req,res)=>{
     const data = await Placement.aggregate([
+        ...getDateMatchPipeline(req, "createdAt"),
         { $group: { _id: "", count: { $sum: 1 } } }
     ]);
     logger.info("Successfully fetched total Placement count!");

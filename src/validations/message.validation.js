@@ -1,12 +1,6 @@
 import { body, param } from "express-validator";
 
 export const sendMessageValidation = [
-  body("senderId")
-    .trim()
-    .isLength({ min: 24, max: 24 })
-    .withMessage("Invalid sender ID format")
-    .isHexadecimal()
-    .withMessage("Sender ID must be a valid hexadecimal string"),
   body("receiverId")
     .trim()
     .isLength({ min: 24, max: 24 })

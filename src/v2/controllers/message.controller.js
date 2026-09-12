@@ -6,7 +6,9 @@ import { getSocketId } from "../../socket/socket.js";
 import logger from "../../utils/Logger/logger.js";
 
 const sendMessage = asyncHandler(async (req, res) => {
-  const { senderId, receiverId, text } = req.body;
+  // senderId is always taken from the verified JWT user — never from the body
+  const senderId = req.user._id.toString();
+  const { receiverId, text } = req.body;
   const receiverSocketId = getSocketId(receiverId);
   const senderSocketId = getSocketId(senderId);
   try {
@@ -18,16 +20,17 @@ const sendMessage = asyncHandler(async (req, res) => {
     if (msg?._id) {
       msg.message.push({ senderId, text });
       await msg.save();
-      // On a document populate() returns a promise, so use the array form.
       await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
-      const addedMessage = msg.message[msg.message.length - 1];
+      // Emit the full document so clients can flatten it correctly
       if (receiverSocketId) {
         req.io.to(receiverSocketId).emit("personalChat:newMessage", msg);
       }
       if (senderSocketId) {
         req.io.to(senderSocketId).emit("personalChat:newMessage", msg);
       }
-      return res.status(200).json(new ApiResponse(200, addedMessage, "Message sent!"));
+      // Return the last added message subdocument for the optimistic update
+      const addedMessage = msg.message[msg.message.length - 1];
+      return res.status(200).json(new ApiResponse(200, { messageId: addedMessage._id }, "Message sent!"));
     }
     msg = await ChatMessage.create({ sender: senderId, receiver: receiverId, message: [{ senderId, text }] });
     await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
@@ -37,7 +40,8 @@ const sendMessage = asyncHandler(async (req, res) => {
     if (senderSocketId) {
       req.io.to(senderSocketId).emit("personalChat:newMessage", msg);
     }
-    return res.status(201).json(new ApiResponse(201, msg, ""));
+    const addedMessage = msg.message[msg.message.length - 1];
+    return res.status(201).json(new ApiResponse(201, { messageId: addedMessage._id }, "Message sent!"));
   } catch (err) {
     logger.info("Error at send message: ", err);
     return res.status(500).json(new ApiError(500, "Server Error!"));

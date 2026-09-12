@@ -5,6 +5,7 @@ const chatMessageSchema = new Schema({
   receiver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   message: [{
     _id: { type: Schema.Types.ObjectId, auto: true },
+    senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     text: { type: String, required: true },
     type: { type: String, enum: ['text', 'image', 'file'], default: 'text' },
     isRead: { type: Boolean, default: false },

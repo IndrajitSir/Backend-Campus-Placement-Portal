@@ -16,7 +16,7 @@ const sendMessage = asyncHandler(async (req, res) => {
       msg = await ChatMessage.findOne({ sender: receiverId, receiver: senderId });
     }
     if (msg?._id) {
-      msg.message.push({ text });
+      msg.message.push({ senderId, text });
       await msg.save();
       // On a document populate() returns a promise, so use the array form.
       await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
@@ -29,7 +29,7 @@ const sendMessage = asyncHandler(async (req, res) => {
       }
       return res.status(200).json(new ApiResponse(200, addedMessage, "Message sent!"));
     }
-    msg = await ChatMessage.create({ sender: senderId, receiver: receiverId, message: [{ text }] });
+    msg = await ChatMessage.create({ sender: senderId, receiver: receiverId, message: [{ senderId, text }] });
     await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
     if (receiverSocketId) {
       req.io.to(receiverSocketId).emit("personalChat:newMessage", msg);
@@ -82,7 +82,7 @@ const getConversations = asyncHandler(async (req, res) => {
         // Count unread messages (messages where sender is the other user and isRead is false)
         let unreadCount = 0;
         for (const m of doc.message) {
-          const msgSenderId = senderId === userId ? receiverId : senderId;
+          const msgSenderId = m.senderId ? m.senderId.toString() : (senderId === userId ? receiverId : senderId);
           if (msgSenderId !== userId && m.isRead === false) {
             unreadCount++;
           }

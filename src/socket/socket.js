@@ -1,6 +1,5 @@
 import { registerChatHandlers } from "./registerChatHandlers.js";
 import { registerInterviewHandlers } from "./registerInterviewHandlers.js";
-import { registerLogHandlers, logView } from "./registerLogHandlers.js";
 import { userSocketMap } from "../constants.js";
 import { socketAuthMiddleware } from "./authMiddleware.js";
 import logger from "../utils/Logger/logger.js";
@@ -36,16 +35,10 @@ export function setupSocket(io) {
         addUser(userId, socket.id);
         logger.info(`Socket connected: user=${userId} role=${role} socket=${socket.id}`);
 
-        if (role === "admin" || role === "super_admin") {
-            socket.join("admin-room");
-            socket.on("log:requestView", () => {
-                logView(socket);
-            });
-        }
-
+        // NOTE: live logs are no longer pushed over socket.io. Admins now
+        // consume them via the SSE endpoint /api/v1/system/logs/stream.
         registerInterviewHandlers(io, socket);
         registerChatHandlers(io, socket);
-        registerLogHandlers(io, socket);
 
         socket.on("error", (err) => {
             logger.error(`Socket error (user=${userId}): ${err.message}`);

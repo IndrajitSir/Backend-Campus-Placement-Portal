@@ -44,7 +44,6 @@ const io = new Server(httpServer, {
   }
 });
 setupSocket(io);
-// streamLogs(io);
 app.use((req, res, next) => {
   req.io = io;
   next();

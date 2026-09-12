@@ -71,8 +71,9 @@ export function registerInterviewHandlers(io, socket) {
     // --- Participant tracking ---
     socket.on("interview:joined", ({ roomId, userId, name, role }) => {
         if (!activeRooms.has(roomId)) return;
+        socket.join(roomId);
         const participants = roomParticipants.get(roomId) || [];
-        if (!participants.some(p => p.userId === userId)) {
+        if (userId && !participants.some(p => p.userId === userId)) {
             participants.push({ userId, name, role, socketId: socket.id });
             roomParticipants.set(roomId, participants);
         }

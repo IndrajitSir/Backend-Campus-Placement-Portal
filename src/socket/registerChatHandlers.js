@@ -1,5 +1,6 @@
 import { timers, activeRooms } from "../constants.js";
 import logger from "../utils/Logger/logger.js";
+import { v4 as uuidv4 } from 'uuid';
 
 const MAX_MESSAGE_LENGTH = 10000;
 
@@ -13,19 +14,23 @@ export function registerChatHandlers(io, socket) {
             if (ack) { return ack({ success: false, message: `Room not found: ${roomId}` }); }
             return;
         }
-        if (typeof message !== "string" || message.length === 0 || message.length > MAX_MESSAGE_LENGTH) {
-            if (ack) { return ack({ success: false, message: "Invalid message" }); }
+        const text = typeof message === "string" ? message : message?.text;
+        if (typeof text !== "string" || text.trim().length === 0 || text.length > MAX_MESSAGE_LENGTH) {
+            if (ack) { return ack({ success: false, message: "Invalid message text" }); }
             return;
         }
         const senderUser = socket.data.user;
+        const msgId = (typeof message === "object" && message?.id) ? message.id : uuidv4();
         const payload = {
-            text: message,
+            id: msgId,
+            text,
             senderId: senderUser?._id,
-            senderName: senderUser?.name || socket.data.name,
+            senderName: senderUser?.name || socket.data.name || (typeof message === "object" ? message.senderName : null) || "Anonymous",
             timestamp: Date.now(),
+            reactions: {},
         };
         io.to(roomId).emit("chat:newMessage", payload);
-        if (ack) { return ack({ success: true }); }
+        if (ack) { return ack({ success: true, message: payload }); }
     });
 
     socket.on("chat:typing", ({ roomId, sender }, ack) => {
@@ -65,16 +70,17 @@ export function registerChatHandlers(io, socket) {
             if (ack) { return ack({ success: false, message: "Invalid messageId" }); }
             return;
         }
-        if (!emoji || typeof emoji !== "string" || emoji.length > 4) {
+        if (!emoji || typeof emoji !== "string" || emoji.length > 8) {
             if (ack) { return ack({ success: false, message: "Invalid emoji" }); }
             return;
         }
         const senderUser = socket.data.user;
+        const userId = senderUser?._id ? senderUser._id.toString() : socket.id;
         io.to(roomId).emit("chat:reaction", {
             messageId,
             emoji,
-            userId: senderUser?._id,
-            userName: senderUser?.name || socket.data.name,
+            userId,
+            userName: senderUser?.name || socket.data.name || "Anonymous",
         });
         if (ack) { return ack({ success: true }); }
     });

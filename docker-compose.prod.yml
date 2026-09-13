@@ -1,9 +1,11 @@
 # Campus Placement — PRODUCTION stack (full self-host)
-# Frontend (nginx) + backend + Piston. NO MongoDB/Redis images — the app
-# connects to MongoDB Atlas and Upstash Redis via the .env.production file.
+# Frontend (nginx) + backend + Piston + Judge0 + ClamAV. NO MongoDB/Redis
+# images — the app connects to MongoDB Atlas and Upstash Redis via the
+# .env.production file.
 #
 # Usage:
 #   cp .env.production.example .env.production   # fill in real values
+#   cp judge0.conf.example judge0.conf           # judge0 needs its config
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 #
 # Notes:
@@ -13,8 +15,12 @@
 #  - Atlas connection strings include a query string (?retryWrites=true&w=
 #    majority) — the backend now appends DB_NAME safely in that case.
 #  - Upstash Redis: rediss:// URLs are handled natively by ioredis (TLS).
-#  - Piston stays bundled (code-execution engine). If you use a hosted
-#    Piston, delete the service and set PISTON_API_URL to your endpoint.
+#  - Piston AND Judge0 both run; the backend tries them in order
+#    (CODE_EXECUTION_ENGINES) and fails over automatically.
+#  - ClamAV scans uploads (fail-closed by default); remove the service (and
+#    set CLAMAV_HOST=) only if you intentionally disable scanning.
+#  - Piston/Judge0 can be dropped if you use hosted alternatives — just set
+#    PISTON_API_URL / JUDGE0_API_URL and remove their services.
 
 name: campusplace-prod
 
@@ -47,8 +53,18 @@ services:
     environment:
       NODE_ENV: production
       PISTON_API_URL: http://piston:2000/api/v2/piston/execute
+      JUDGE0_API_URL: http://judge0:2358
+      CODE_EXECUTION_ENGINES: ${CODE_EXECUTION_ENGINES:-self_piston,judge0,public_piston,community_piston}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      CLAMAV_FAIL_OPEN: ${CLAMAV_FAIL_OPEN:-false}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
     depends_on:
       piston:
+        condition: service_healthy
+      judge0:
+        condition: service_started
+      clamav:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
@@ -71,5 +87,82 @@ services:
       backend:
         condition: service_healthy
 
+  # ---- Judge0 — second code-execution engine ----
+  judge0:
+    image: judge0/judge0:latest
+    container_name: campusplace-prod-judge0
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - "127.0.0.1:${JUDGE0_PORT:-2358}:2358"
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    container_name: campusplace-prod-judge0-worker
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-db:
+    image: postgres:16.2
+    container_name: campusplace-prod-judge0-db
+    env_file: judge0.conf
+    volumes:
+      - judge0_data:/var/lib/postgresql/data/
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  judge0-redis:
+    image: redis:7.2.4
+    container_name: campusplace-prod-judge0-redis
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: judge0.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---- ClamAV — virus scanning for uploads ----
+  clamav:
+    image: clamav/clamav:stable
+    container_name: campusplace-prod-clamav
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - clamav_db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 volumes:
   piston_packages:
+  judge0_data:
+  clamav_db:

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { upload } from '../middlewares/multer.middleware.js';
+import { scanAndSanitize } from '../middlewares/fileScan.middleware.js';
 import {
     deleteResume,
     getAllStudents,
@@ -32,7 +33,18 @@ const router = Router();
 const studentRoles = ["student"];
 const staffRoles = ["placement_staff", "super_admin", "admin"];
 
-router.route("/upload-resume").put(upload.single('resume'), verifyUserWithRole(studentRoles), uploadResume);
+router.route("/upload-resume").put(
+  upload.single('resume'),
+  verifyUserWithRole(studentRoles),
+  scanAndSanitize({
+    field: 'resume',
+    allowedMimes: [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+  }),
+  uploadResume
+);
 router.route("/delete-resume").delete(verifyUserWithRole(studentRoles), deleteResume);
 router.route("/all").get(verifyUserWithRole(staffRoles), getAllStudents);
 router.route("/").get(verifyUserWithRole(staffRoles), getOneStudentValidation, validate, getOneStudent);
@@ -44,5 +56,14 @@ router.route("/add-project/:student_id").post(verifyUserWithRole(studentRoles), 
 router.route("/update-project/:student_id").put(verifyUserWithRole(studentRoles), updateProjectValidation, validate, updateProject);
 router.route("/delete-project/:student_id").delete(verifyUserWithRole(studentRoles), deleteProjectValidation, validate, deleteProject);
 router.route("/get-project").put(verifyUserWithRole(staffRoles), getProjectsValidation, validate, getProjects);
-router.route("/upload-avatar").put(upload.single('avatar'), verifyUserWithRole(studentRoles), uploadAvatar);
+router.route("/upload-avatar").put(
+  upload.single('avatar'),
+  verifyUserWithRole(studentRoles),
+  scanAndSanitize({
+    field: 'avatar',
+    allowedMimes: ['image/jpeg', 'image/png', 'image/webp'],
+    isImage: true,
+  }),
+  uploadAvatar
+);
 export default router;

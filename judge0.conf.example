@@ -1,6 +1,7 @@
-# Judge0 code-execution engine configuration (opt-in profile)
-# Copy to judge0.conf, then:
-#   docker compose --profile code-exec up -d --build
+# Judge0 code-execution engine configuration
+# Copy to judge0.conf, then start the stack (Judge0 runs by default):
+#   docker compose up -d --build
+# (production: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build)
 #
 # IMPORTANT: keep POSTGRES_HOST/REDIS_HOST pointing at the compose service
 # names defined in docker-compose.yml (judge0-db / judge0-redis).

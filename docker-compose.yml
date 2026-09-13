@@ -2,14 +2,15 @@
 # Deployed separately from the frontend (frontend runs via `npm run dev`
 # on the host, pointing at http://localhost:6005).
 #
-# A single `docker compose up --build` brings up the API plus the Mongo /
-# Redis / Piston services it depends on, with the backend hot-reloading
-# from ./src (nodemon inside the container).
+# A single `docker compose up --build` brings up the API plus Mongo / Redis /
+# Piston / Judge0 / ClamAV services, with the backend hot-reloading from
+# ./src (nodemon inside the container).
 #
-# Judge0 (alternative code-execution engine) is available under the
-# `code-exec` profile — opt in with:
+# Judge0 needs its config file on first run:
 #   cp judge0.conf.example judge0.conf
-#   docker compose --profile code-exec up -d --build
+#
+# ClamAV downloads its virus database on first start (a few minutes); uploads
+# are rejected (fail-closed) until clamd is healthy.
 #
 # Note: if a MongoDB / Redis instance is already running on the host
 # (e.g. the Windows "MongoDB" service on 27017), override the host ports:
@@ -106,12 +107,24 @@ services:
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       LOGTAIL_SOURCE_TOKEN: ${LOGTAIL_SOURCE_TOKEN:-}
       PISTON_API_URL: http://piston:2000/api/v2/piston/execute
+      # Code-execution failover order + Judge0 engine
+      JUDGE0_API_URL: http://judge0:2358
+      CODE_EXECUTION_ENGINES: ${CODE_EXECUTION_ENGINES:-self_piston,judge0,public_piston,community_piston}
+      # File scanning (ClamAV) — fail-closed by default
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      CLAMAV_FAIL_OPEN: ${CLAMAV_FAIL_OPEN:-false}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
       piston:
+        condition: service_healthy
+      judge0:
+        condition: service_started
+      clamav:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
@@ -120,14 +133,13 @@ services:
       retries: 5
       start_period: 15s
 
-  # ---- Judge0 — alternative code-execution engine (opt-in profile) ----
-  # Modeled on the official judge0 compose. Requires a judge0.conf file:
+  # ---- Judge0 — second code-execution engine (runs by default) ----
+  # Piston and Judge0 co-exist; the backend tries them in order and fails
+  # over automatically (CODE_EXECUTION_ENGINES). Requires judge0.conf:
   #   cp judge0.conf.example judge0.conf
-  # The app's PISTON_API_URL still points at the bundled Piston engine —
-  # Judge0 is provisioned here as an alternative sandbox for future use.
   judge0:
     image: judge0/judge0:latest
-    profiles: ["code-exec"]
+    container_name: campusplace-judge0
     volumes:
       - ./judge0.conf:/judge0.conf:ro
     ports:
@@ -142,7 +154,7 @@ services:
 
   judge0-worker:
     image: judge0/judge0:latest
-    profiles: ["code-exec"]
+    container_name: campusplace-judge0-worker
     command: ["./scripts/workers"]
     volumes:
       - ./judge0.conf:/judge0.conf:ro
@@ -156,7 +168,7 @@ services:
 
   judge0-db:
     image: postgres:16.2
-    profiles: ["code-exec"]
+    container_name: campusplace-judge0-db
     env_file: judge0.conf
     volumes:
       - judge0_data:/var/lib/postgresql/data/
@@ -170,7 +182,7 @@ services:
 
   judge0-redis:
     image: redis:7.2.4
-    profiles: ["code-exec"]
+    container_name: campusplace-judge0-redis
     command: [
       "bash", "-c",
       'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
@@ -183,8 +195,24 @@ services:
       timeout: 5s
       retries: 5
 
+  clamav:
+    image: clamav/clamav:stable
+    container_name: campusplace-clamav
+    restart: unless-stopped
+    ports:
+      - "${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - clamav_db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 volumes:
   mongo_data:
   redis_data:
   piston_packages:
   judge0_data:
+  clamav_db:

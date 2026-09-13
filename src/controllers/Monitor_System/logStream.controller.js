@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { User } from "../../models/user.models.js";
 import { createLogTailer } from "../../utils/logTailer.js";
 import logger from "../../utils/Logger/logger.js";
 
@@ -29,7 +30,7 @@ const extractToken = (req) => {
  * connected admin gets one SSE connection; chat/interview sockets are
  * untouched.
  */
-export function streamLogs(req, res) {
+export async function streamLogs(req, res) {
   const token = extractToken(req);
   if (!token) {
     return res.status(401).json({ success: false, message: "Unauthorized request" });
@@ -48,9 +49,20 @@ export function streamLogs(req, res) {
     });
   }
 
-  if (!ALLOWED_ROLES.includes(decoded?.role)) {
+  // The token carries only the _id — load the user (and their role) fresh
+  // from the DB instead of trusting token claims.
+  let user = null;
+  try {
+    user = await User.findById(decoded?._id);
+  } catch (error) {
+    logger.error(`SSE log stream: DB lookup failed: ${error?.message}`);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+
+  if (!user || !ALLOWED_ROLES.includes(user.role)) {
     return res.status(403).json({ success: false, message: "Access denied" });
   }
+  const role = user.role;
 
   // ---- SSE handshake ----
   res.writeHead(200, {
@@ -83,12 +95,12 @@ export function streamLogs(req, res) {
     closed = true;
     clearInterval(heartbeat);
     stopTailer();
-    logger.info(`SSE log stream closed (role=${decoded?.role})`);
+    logger.info(`SSE log stream closed (role=${role})`);
     res.end();
   };
 
   req.on("close", cleanup);
   req.on("error", cleanup);
 
-  logger.info(`SSE log stream opened (role=${decoded?.role})`);
+  logger.info(`SSE log stream opened (role=${role})`);
 }

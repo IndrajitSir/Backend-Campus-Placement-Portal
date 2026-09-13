@@ -17,6 +17,7 @@ const app = express();
 const httpServer = createServer(app);
 
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 
 // FRONTEND_URL can be a single origin or a comma-separated list. Vercel
 // preview/branch deployments get their own subdomain, so any

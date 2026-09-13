@@ -1,10 +1,11 @@
 import logger from "./Logger/logger.js";
 import { createAndEmitNotification } from "./notify.js";
+import { mailProvidersConfigured, sendEmail } from "./mailer.js";
 
 const INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
 const WINDOW_DAYS = 3;
 
-const runReminderSweep = async (io, mailer) => {
+const runReminderSweep = async (io) => {
   const { Placement } = await import("../models/placement.model.js");
   const { User } = await import("../models/user.models.js");
   const { Application } = await import("../models/application.model.js");
@@ -21,15 +22,6 @@ const runReminderSweep = async (io, mailer) => {
   // Only notify actual students (never staff/admin accounts).
   const students = await User.find({ role: "student" }).select("_id email").lean();
   if (!students.length) return;
-
-  // Lazy transporter: built once per sweep from the configured SMTP env vars.
-  const transporter = mailer?.createTransport
-    ? mailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      })
-    : null;
 
   let sent = 0;
   for (const placement of placements) {
@@ -51,11 +43,11 @@ const runReminderSweep = async (io, mailer) => {
       });
       if (notification) sent++;
 
-      // Best-effort email: a send failure is logged and the loop continues.
-      if (transporter && student.email) {
+      // Best-effort email via the provider chain (nodemailer → Resend):
+      // a send failure is logged and the loop continues.
+      if (student.email) {
         try {
-          await transporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          await sendEmail({
             to: student.email,
             subject: "Placement closing soon",
             text: `${placement.company_name} — ${placement.job_title} closes on ${lastDateStr}. Apply before the deadline!`,
@@ -71,35 +63,20 @@ const runReminderSweep = async (io, mailer) => {
 };
 
 /**
- * Env-gated deadline reminder loop. Returns immediately (no-op) unless SMTP
- * is fully configured (SMTP_HOST, SMTP_USER, SMTP_PASS).
+ * Env-gated deadline reminder loop. Returns immediately (no-op) unless a mail
+ * provider is configured (SMTP_* or RESEND_API_KEY). Providers are tried in
+ * MAIL_PROVIDER_ORDER (default nodemailer → resend) via src/utils/mailer.js.
  */
 export const startDeadlineReminder = () => {
-  const smtpConfigured =
-    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
-
-  if (!smtpConfigured) {
-    logger.info("Deadline reminder disabled: SMTP not configured");
+  if (!mailProvidersConfigured()) {
+    logger.info("Deadline reminder disabled: no mail provider configured (set SMTP_* or RESEND_API_KEY)");
     return;
   }
 
-  // nodemailer is loaded lazily so a missing dependency never crashes boot.
-  const mailerPromise = import("nodemailer")
-    .then((mod) => mod.default)
-    .catch((err) => {
-      logger.error(`Could not load nodemailer: ${err?.message}`);
-      return null;
-    });
-
   setInterval(() => {
-    Promise.resolve(mailerPromise)
-      .then((mailer) => {
-        if (!mailer) return null;
-        return runReminderSweep(global.__io || null, mailer);
-      })
-      .catch((err) => {
-        logger.error(`Deadline reminder sweep failed: ${err?.message}`);
-      });
+    runReminderSweep(global.__io || null).catch((err) => {
+      logger.error(`Deadline reminder sweep failed: ${err?.message}`);
+    });
   }, INTERVAL_MS);
 
   logger.info("Deadline reminder started (every 6h, 3-day window)");

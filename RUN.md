@@ -157,7 +157,9 @@ Skip the compose file and set every key from §5 as environment variables in the
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | ◻️ | GitHub → Settings → Developer settings → OAuth Apps. |
 | `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` | ◻️ | LinkedIn Developer portal. |
 | `LOGTAIL_SOURCE_TOKEN` | ◻️ | Logtail source token. Leave **unset** if unused — an invalid token hangs the server. |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | ◻️ | Your email provider (deadline-reminder job; disabled when blank). |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | ◻️ | Nodemailer provider (deadline-reminder job). |
+| `RESEND_API_KEY` / `RESEND_FROM` | ◻️ | Resend fallback provider (deadline-reminder job). Sandbox key only sends from `onboarding@resend.dev`. |
+| `MAIL_PROVIDER_ORDER` | ◻️ | Default `nodemailer,resend` — providers tried in order until one succeeds. Job disabled when both are blank. |
 | `JUDGE0_AUTH_TOKEN` | ◻️ | `printf "user:pass" | base64` — only if you enable auth in `judge0.conf`. |
 | `PISTON_API_KEY` | ◻️ | Authorization key for the **public/community** Piston endpoints. The public `emkc.org` API has required one since Feb 2026 (obtain from the Piston maintainers). Blank ⇒ public fallbacks are skipped; self-hosted Piston/Judge0 still work. |
 | `CODE_EXECUTION_ENGINES` | ◻️ | Default `self_piston,judge0,public_piston,community_piston` — fine as-is. |

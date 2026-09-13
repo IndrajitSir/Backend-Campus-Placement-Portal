@@ -13,12 +13,11 @@ Two production paths are supported:
 
 ---
 
-## 0. The env vars you asked about
+## 0. The env vars
 
 | In `.env.production` | Works? | Explanation |
 | --- | --- | --- |
 | `FRONTEND_URL=https://campus-placement-portal.vercel.app` | ✅ | This is the **exact** variable the backend reads for CORS (`src/app.js`) — comma-separated allowed origins. |
-| `CORS_ORIGIN=https://campus-placement-portal.vercel.app` | ⚠️ No effect | The backend never reads `CORS_ORIGIN`. Harmless, but delete it to avoid confusion — `FRONTEND_URL` is the real one. |
 | `VITE_API_URL=https://backend-campus-placement-portal.onrender.com` | ✅ with caveats | Baked into the **frontend bundle at build time**. Must be set wherever the frontend image is built (compose arg / Vercel env). The browser calls the backend directly (nginx does not proxy `/api`), so `FRONTEND_URL` must match the browser origin (it does), and the Render service name must be exactly `backend-campus-placement-portal` — Render URLs are `<service-name>.onrender.com` and service names must be globally unique. |
 
 Also set `PORT=6005` (already in `env.production.example`) for the Docker path —

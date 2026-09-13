@@ -59,6 +59,9 @@ services:
       - .env.production
     environment:
       NODE_ENV: production
+      # App binds process.env.PORT; keep it 6005 to match the port mapping
+      # and healthcheck (also set in env.production.example).
+      PORT: 6005
       PISTON_API_URL: http://piston:2000/api/v2/piston/execute
       JUDGE0_API_URL: http://judge0:2358
       CODE_EXECUTION_ENGINES: ${CODE_EXECUTION_ENGINES:-self_piston,judge0,public_piston,community_piston}

@@ -23,12 +23,18 @@ services:
     image: ghcr.io/engineer-man/piston:latest
     container_name: campusplace-piston
     restart: unless-stopped
+    # isolate sandbox requires privileged mode + exec tmpfs (matches the
+    # official piston docker-compose.yaml).
+    privileged: true
+    tmpfs:
+      - /tmp:exec
     ports:
       - "${PISTON_PORT:-2000}:2000"
     volumes:
       - piston_packages:/piston/packages
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2000/healthz"]
+      # node is the runtime inside the piston image — avoid curl (not present)
+      test: ["CMD", "node", "-e", "fetch('http://localhost:2000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 5

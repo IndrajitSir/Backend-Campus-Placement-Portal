@@ -23,6 +23,10 @@ const COMMUNITY_PISTONS = [
   "https://piston-api.nico.fyi/api/v2/piston/execute",
   "https://pistonapi.up.railway.app/api/v2/piston/execute",
 ];
+// The public emkc.org API now requires an authorization key (obtained from
+// the Piston maintainers). Sent as Authorization: Bearer <key> on public and
+// community endpoints; leave blank for self-hosted-only setups.
+const PISTON_API_KEY = process.env.PISTON_API_KEY || null;
 
 const JUDGE0_URL = process.env.JUDGE0_API_URL || null;
 const JUDGE0_AUTH_TOKEN = process.env.JUDGE0_AUTH_TOKEN || null;
@@ -54,16 +58,23 @@ const fetchWithTimeout = async (url, options, timeoutMs = MAX_EXECUTION_TIMEOUT_
 
 // --- Piston adapter -------------------------------------------------------
 
-const runPiston = async (endpoint, { langConfig, codeToSend, fileName }) => {
+const runPiston = async (endpoint, { langConfig, codeToSend, fileName, isPublic }) => {
   const payload = {
     language: langConfig.language,
     version: langConfig.version,
     files: [{ name: fileName, content: codeToSend }],
   };
 
+  const headers = { "Content-Type": "application/json" };
+  // Only remote (public/community) endpoints need the API key; self-hosted
+  // instances are protected by the network itself.
+  if (isPublic && PISTON_API_KEY) {
+    headers.Authorization = `Bearer ${PISTON_API_KEY}`;
+  }
+
   const response = await fetchWithTimeout(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -137,15 +148,15 @@ export function buildExecutionRunners({ langConfig, codeToSend, fileName, langua
     switch (engine) {
       case "self_piston":
         if (SELF_HOSTED_PISTON) {
-          runners.push(() => runPiston(SELF_HOSTED_PISTON, { langConfig, codeToSend, fileName }));
+          runners.push(() => runPiston(SELF_HOSTED_PISTON, { langConfig, codeToSend, fileName, isPublic: false }));
         }
         break;
       case "public_piston":
-        runners.push(() => runPiston(PUBLIC_PISTON, { langConfig, codeToSend, fileName }));
+        runners.push(() => runPiston(PUBLIC_PISTON, { langConfig, codeToSend, fileName, isPublic: true }));
         break;
       case "community_piston":
         for (const url of COMMUNITY_PISTONS) {
-          runners.push(() => runPiston(url, { langConfig, codeToSend, fileName }));
+          runners.push(() => runPiston(url, { langConfig, codeToSend, fileName, isPublic: true }));
         }
         break;
       case "judge0":

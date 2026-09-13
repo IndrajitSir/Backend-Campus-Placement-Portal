@@ -127,12 +127,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Engines start alongside the backend — readiness is handled at request
+      # time by the engine-order failover (Piston → Judge0 → public fallbacks)
+      # and by ClamAV's fail-closed upload middleware.
       piston:
-        condition: service_healthy
+        condition: service_started
       judge0:
         condition: service_started
       clamav:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 15s
@@ -211,11 +214,14 @@ services:
     volumes:
       - clamav_db:/var/lib/clamav
     healthcheck:
+      # First boot downloads the virus DB (can take 5-10 min) before clamd
+      # accepts connections — large start_period keeps it from flapping
+      # unhealthy. Backend is not gated on this (fail-closed middleware).
       test: ["CMD", "clamdscan", "--ping"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 300s
 
 volumes:
   mongo_data:

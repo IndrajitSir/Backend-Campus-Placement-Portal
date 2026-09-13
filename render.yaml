@@ -1,0 +1,76 @@
+# Render Blueprint — deploys the backend API as a Docker web service.
+#
+# How to use:
+#   1. Commit this file at your repo ROOT (F:\campusplace).
+#   2. In Render: New + → Blueprint → pick this repo → Apply.
+#   3. Fill the `sync: false` secrets in the Render dashboard when prompted.
+#
+# IMPORTANT: this deploys the API only. The Piston / Judge0 / ClamAV
+# sidecar containers from docker-compose.prod.yml do not exist on Render —
+# see DEPLOY.md for how code execution and file scanning behave here.
+#
+# MongoDB stays on Atlas and Redis on Upstash (as in .env.production), so no
+# `databases:` section is added — a Render-managed Postgres would go unused.
+
+services:
+  - type: web
+    name: campusplace-api            # MUST be globally unique on Render
+    runtime: docker
+    dockerfilePath: ./Backend-Campus-Placement-Portal/Dockerfile.prod
+    dockerContext: ./Backend-Campus-Placement-Portal
+    healthCheckPath: /api/v1/healthcheck
+    autoDeploy: true
+    plan: free                       # starter/pro removes cold starts
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT automatically (default 10000); the app binds
+      # process.env.PORT and the Dockerfile healthcheck honors it too.
+      # Do NOT hard-code PORT=6005 here — Render needs its injected port.
+      - key: FRONTEND_URL
+        value: https://campus-placement-portal.vercel.app
+      - key: MAIL_PROVIDER_ORDER
+        value: nodemailer,resend
+
+      # --- Required secrets — set in the Render dashboard (Sync screen) ---
+      - key: MONGODB_URI
+        sync: false                   # Atlas SRV URI
+      - key: REDIS_URL
+        sync: false                   # Upstash rediss:// URI
+      - key: ACCESS_TOKEN_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+
+      # --- Code execution WITHOUT sidecars (Piston/Judge0 not on Render) ---
+      # Only the public/community Piston endpoints exist here. emkc.org has
+      # required an API key since Feb 2026 — get one from the Piston
+      # maintainers, or set CODE_EXECUTION_ENGINES to a single engine.
+      - key: CODE_EXECUTION_ENGINES
+        value: public_piston,community_piston
+      - key: PISTON_API_KEY
+        sync: false                   # blank → public fallbacks are skipped
+
+      # --- Upload scanning WITHOUT a clamd container ---
+      # Leave CLAMAV_HOST unset → ClamAV client reports "disabled" and
+      # uploads skip scanning (file-type signature + sharp EXIF stripping
+      # still run). Set it only if you host clamd elsewhere.
+
+      # --- Deadline-reminder email (optional) ---
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false

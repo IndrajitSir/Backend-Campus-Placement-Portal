@@ -171,22 +171,83 @@ const runOneCompiler = async ({ language, codeToSend }) => {
     throw new Error(`OneCompiler returned HTTP ${response.status}`);
   }
 
-  const raw = await response.json();
-  // console/run returns a single result object; the newer v1/run API returns
-  // an array of results (one per stdin) — accept both.
-  const item = Array.isArray(raw) ? raw[0] : raw;
-  if (!item || typeof item !== "object") {
+  const bodyText = await response.text();
+
+  // /api/console/run does NOT return a single JSON body — it streams
+  // newline-delimited JSON events like:
+  //   {"type":"started","jobId":"...","timestamp":...}
+  //   {"type":"stdout","data":"Hello, World!","timestamp":...}
+  //   {"type":"stderr","data":"...","timestamp":...}
+  //   {"type":"exit","exitCode":0,"executionTime":178,"timestamp":...}
+  // Aggregate the stdout/stderr payloads so the output displays correctly.
+  let stdout = "";
+  let stderr = "";
+  let compileError = "";
+  let exitCode = null;
+  let sawEvent = false;
+
+  for (const line of bodyText.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    let event;
+    try {
+      event = JSON.parse(trimmed);
+    } catch {
+      continue; // ignore non-JSON lines (keepalives, empty frames, …)
+    }
+    if (!event || typeof event !== "object") continue;
+    sawEvent = true;
+    switch (event.type) {
+      case "stdout":
+        stdout += event.data ?? "";
+        break;
+      case "stderr":
+        stderr += event.data ?? "";
+        break;
+      case "compile_error":
+      case "compile-error":
+      case "error":
+        compileError += event.data ?? event.message ?? "";
+        break;
+      case "exit":
+        exitCode = typeof event.exitCode === "number" ? event.exitCode : exitCode;
+        break;
+      default:
+        break; // "started", keepalives, etc.
+    }
+  }
+
+  // Fallback: if the body was actually the batch JSON shape (array/object of
+  // { stdout, stderr, ... } results) rather than an event stream, use it.
+  if (!sawEvent) {
+    try {
+      const raw = JSON.parse(bodyText);
+      const item = Array.isArray(raw) ? raw[0] : raw;
+      if (item && typeof item === "object") {
+        const status = String(item.status || "").toLowerCase();
+        const exception = item.exception || item.error || "";
+        return {
+          stdout: (item.stdout || "").slice(0, 50_000),
+          stderr: (item.stderr || "").slice(0, 50_000),
+          compileError: (item.compile_output || (status === "error" || status === "failed" ? exception : ""))
+            .slice(0, 50_000),
+        };
+      }
+    } catch {
+      // fall through to the error below
+    }
     throw new Error("OneCompiler returned an invalid response");
   }
 
-  const status = String(item.status || "").toLowerCase();
-  const exception = item.exception || item.error || "";
+  // A non-zero exit with no output shouldn't look like a success.
+  if (exitCode !== null && exitCode !== 0 && !stderr && !compileError) {
+    stderr = `Process exited with code ${exitCode}`;
+  }
 
   return {
-    stdout: (item.stdout || "").slice(0, 50_000),
-    stderr: (item.stderr || "").slice(0, 50_000),
-    compileError: (item.compile_output || (status === "error" || status === "failed" ? exception : ""))
-      .slice(0, 50_000),
+    stdout: stdout.slice(0, 50_000),
+    stderr: stderr.slice(0, 50_000),
+    compileError: compileError.slice(0, 50_000),
   };
 };
 

@@ -37,4 +37,5 @@ Thumbs.db
 
 # Sensitive files (auto-detected)
 .env.example
-
+.env.production
+judge0.conf

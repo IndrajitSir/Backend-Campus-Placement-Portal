@@ -1,0 +1,31 @@
+# Judge0 code-execution engine configuration (opt-in profile)
+# Copy to judge0.conf, then:
+#   docker compose --profile code-exec up -d --build
+#
+# IMPORTANT: keep POSTGRES_HOST/REDIS_HOST pointing at the compose service
+# names defined in docker-compose.yml (judge0-db / judge0-redis).
+# Generate real values for the secrets before production use:
+#   openssl rand -base64 32
+
+POSTGRES_DB=judge0
+POSTGRES_USER=judge0
+POSTGRES_PASSWORD=judge0
+POSTGRES_HOST=judge0-db
+POSTGRES_PORT=5432
+
+REDIS_HOST=judge0-redis
+REDIS_PORT=6379
+REDIS_PASSWORD=judge0
+
+# Disables the public /submissions endpoint; the app must then send
+# X-Auth-Token / X-Auth-User headers. Generate with:
+#   printf "%s" "username:password" | base64
+JUDGE0_AUTHENTICATION_BASE64=
+
+# Rails secret key base — generate with: openssl rand -hex 64
+SECRET_KEY_BASE=
+
+RAILS_ENV=production
+RAILS_MAX_THREADS=4
+RAILS_SERVER_PROCESSES=1
+RAILS_LOG_TO_STDOUT=true

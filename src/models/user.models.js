@@ -13,6 +13,11 @@ const userSchema = new Schema(
         refreshToken: { type: String, default: null },
         dateOfBirth: { type: Date, default: null },
         gender: { type: String, default: null },
+        // E2EE: public ECDH key (JWK JSON string) + its version. Null for
+        // legacy users who haven't logged in since encryption was enabled —
+        // the client generates + uploads the key on first login.
+        e2eePublicKey: { type: String, default: null },
+        e2eeKeyVersion: { type: Number, default: 1 },
     }, { timestamps: true }
 );
 

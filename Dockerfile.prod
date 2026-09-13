@@ -1,0 +1,38 @@
+# Backend — Campus Placement API (production image)
+# Multi-stage: dependencies with `npm ci --omit=dev`, lean runtime image.
+# Used by docker-compose.prod.yml. Runtime config comes from the
+# environment (Atlas URI, Upstash rediss:// URL, secrets, ...) — the
+# .env files are excluded from the image via .dockerignore.
+
+# ---- Stage 1: dependencies ----
+FROM node:20-slim AS deps
+
+WORKDIR /app
+
+COPY package*.json ./
+# --omit=dev keeps the image free of nodemon/prettier
+RUN npm ci --omit=dev
+
+# ---- Stage 2: runtime ----
+FROM node:20-slim AS runtime
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+# Copy with the node user as owner so Winston can write ./logs
+COPY --chown=node:node . .
+
+# Ensure the log directory exists for the unprivileged runtime user
+RUN mkdir -p /app/logs && chown node:node /app/logs
+
+USER node
+
+EXPOSE 6005
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+# `npm start` = node -r dotenv/config src/index.js
+CMD ["npm", "start"]

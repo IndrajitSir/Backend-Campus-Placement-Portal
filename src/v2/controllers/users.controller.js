@@ -50,4 +50,46 @@ const getAllUsers = asyncHandler(async (req, res) => {
     ));
 });
 
-export { getAllPlacementStaffsOrAdmins, getAllUsers }
+// Uploads the caller's E2EE public key (JWK JSON string). The private key
+// never leaves the browser — the server only ever stores the public half.
+const updateE2EEKey = asyncHandler(async (req, res) => {
+    const { publicKey, keyVersion } = req.body || {};
+
+    if (!publicKey || typeof publicKey !== "string" || publicKey.length > 4096) {
+        throw new ApiError(400, "A valid publicKey (JWK JSON string) is required");
+    }
+    const parsedKeyVersion = Number(keyVersion);
+    if (!Number.isInteger(parsedKeyVersion) || parsedKeyVersion < 1) {
+        throw new ApiError(400, "A valid keyVersion (integer >= 1) is required");
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+        e2eePublicKey: publicKey,
+        e2eeKeyVersion: parsedKeyVersion,
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, { updated: true, keyVersion: parsedKeyVersion }, "E2EE public key updated")
+    );
+});
+
+// Returns another user's public key so the caller can encrypt messages to
+// them. Null-safe: legacy users who never generated a key return nulls.
+const getE2EEKey = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select("e2eePublicKey e2eeKeyVersion");
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            userId: user._id,
+            publicKey: user.e2eePublicKey || null,
+            keyVersion: user.e2eeKeyVersion || null,
+        }, "E2EE public key fetched")
+    );
+});
+
+export { getAllPlacementStaffsOrAdmins, getAllUsers, updateE2EEKey, getE2EEKey }

@@ -1,0 +1,75 @@
+# Campus Placement — PRODUCTION stack (full self-host)
+# Frontend (nginx) + backend + Piston. NO MongoDB/Redis images — the app
+# connects to MongoDB Atlas and Upstash Redis via the .env.production file.
+#
+# Usage:
+#   cp .env.production.example .env.production   # fill in real values
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Notes:
+#  - VITE_API_URL is baked into the frontend bundle at BUILD time — it must
+#    be the PUBLIC backend URL the browser can reach (e.g. https://api.your
+#    -domain.com), and FRONTEND_URL/CORS_ORIGIN must match the frontend origin.
+#  - Atlas connection strings include a query string (?retryWrites=true&w=
+#    majority) — the backend now appends DB_NAME safely in that case.
+#  - Upstash Redis: rediss:// URLs are handled natively by ioredis (TLS).
+#  - Piston stays bundled (code-execution engine). If you use a hosted
+#    Piston, delete the service and set PISTON_API_URL to your endpoint.
+
+name: campusplace-prod
+
+services:
+  piston:
+    image: ghcr.io/engineer-man/piston:latest
+    container_name: campusplace-prod-piston
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PISTON_PORT:-2000}:2000"
+    volumes:
+      - piston_packages:/piston/packages
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: campusplace-prod-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-6005}:6005"
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PISTON_API_URL: http://piston:2000/api/v2/piston/execute
+    depends_on:
+      piston:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:6005/api/v1/healthcheck').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ../Frontend-Campus-Placement-Portal-
+      args:
+        # Must be reachable from the BROWSER — set in .env.production
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:6005}
+    container_name: campusplace-prod-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  piston_packages:

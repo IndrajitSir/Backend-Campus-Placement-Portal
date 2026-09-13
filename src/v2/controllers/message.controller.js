@@ -5,10 +5,49 @@ import { ChatMessage } from "../models/chatMessage.model.js";
 import { getSocketId } from "../../socket/socket.js";
 import logger from "../../utils/Logger/logger.js";
 
+// Validates an E2EE envelope { iv, salt, data } (base64 strings).
+const isValidEnvelope = (env) =>
+  env &&
+  typeof env.iv === "string" && env.iv.length > 0 && env.iv.length <= 64 &&
+  typeof env.salt === "string" && env.salt.length > 0 && env.salt.length <= 128 &&
+  typeof env.data === "string" && env.data.length > 0 && env.data.length <= 40000;
+
 const sendMessage = asyncHandler(async (req, res) => {
   // senderId is always taken from the verified JWT user — never from the body
   const senderId = req.user._id.toString();
-  const { receiverId, text } = req.body;
+  const { receiverId, text, ciphertexts, keyVersion } = req.body;
+
+  // E2EE path: server persists ciphertexts only and never sees plaintext.
+  const encrypted =
+    ciphertexts &&
+    isValidEnvelope(ciphertexts.toSender) &&
+    isValidEnvelope(ciphertexts.toReceiver);
+
+  let messageEntry;
+  if (encrypted) {
+    const v = Number(keyVersion);
+    messageEntry = {
+      senderId,
+      encrypted: true,
+      ciphertexts: {
+        toSender: {
+          iv: ciphertexts.toSender.iv,
+          salt: ciphertexts.toSender.salt,
+          data: ciphertexts.toSender.data,
+        },
+        toReceiver: {
+          iv: ciphertexts.toReceiver.iv,
+          salt: ciphertexts.toReceiver.salt,
+          data: ciphertexts.toReceiver.data,
+        },
+      },
+      keyVersion: Number.isInteger(v) && v >= 1 ? v : 1,
+    };
+  } else {
+    // Legacy plaintext path (old clients / fallback).
+    messageEntry = { senderId, text };
+  }
+
   const receiverSocketId = getSocketId(receiverId);
   const senderSocketId = getSocketId(senderId);
   try {
@@ -18,7 +57,7 @@ const sendMessage = asyncHandler(async (req, res) => {
       msg = await ChatMessage.findOne({ sender: receiverId, receiver: senderId });
     }
     if (msg?._id) {
-      msg.message.push({ senderId, text });
+      msg.message.push(messageEntry);
       await msg.save();
       await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
       // Emit the full document so clients can flatten it correctly
@@ -32,7 +71,7 @@ const sendMessage = asyncHandler(async (req, res) => {
       const addedMessage = msg.message[msg.message.length - 1];
       return res.status(200).json(new ApiResponse(200, { messageId: addedMessage._id }, "Message sent!"));
     }
-    msg = await ChatMessage.create({ sender: senderId, receiver: receiverId, message: [{ senderId, text }] });
+    msg = await ChatMessage.create({ sender: senderId, receiver: receiverId, message: [messageEntry] });
     await msg.populate([{ path: "sender", select: "name" }, { path: "receiver", select: "name" }]);
     if (receiverSocketId) {
       req.io.to(receiverSocketId).emit("personalChat:newMessage", msg);
@@ -92,13 +131,30 @@ const getConversations = asyncHandler(async (req, res) => {
           }
         }
 
+        // For E2EE previews, hand the viewer the copy they can decrypt:
+        // toSender for their own message, toReceiver for an incoming one.
+        const lastMsgSenderId = lastMsg?.senderId
+          ? lastMsg.senderId.toString()
+          : (senderId === userId ? receiverId : senderId);
+        const isMyLastMessage = lastMsgSenderId === userId;
+        const previewCipher = lastMsg?.encrypted
+          ? (isMyLastMessage ? lastMsg?.ciphertexts?.toSender : lastMsg?.ciphertexts?.toReceiver) || null
+          : null;
+
         conversationMap.set(otherUserId, {
           user: {
             _id: otherUserId,
             name: otherUser.name,
             email: otherUser.email,
           },
+          // Legacy plaintext preview — empty for E2EE messages.
           lastMessage: lastMsg?.text || "",
+          // E2EE preview: ciphertext the client can decrypt with its own key.
+          lastMessageCipher: previewCipher,
+          lastMessageEncrypted: Boolean(lastMsg?.encrypted),
+          // Direction flag: true when the last message was sent by the viewer
+          // (preview copy is toSender → decrypt with MY own public key).
+          lastMessageMine: isMyLastMessage,
           lastMessageAt: lastMsg?.sentAt || doc.updatedAt,
           unreadCount,
         });

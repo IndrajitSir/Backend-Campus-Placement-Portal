@@ -1,6 +1,9 @@
 node_modules
 npm-debug.log
 .env
+.env.*
+!.env.example
+judge0.conf
 logs
 temp
 Readme.md

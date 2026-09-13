@@ -8,7 +8,19 @@ const connectDB = async () => {
         throw err;
     }
     try {
-        const uri = `${process.env.MONGODB_URI}/${process.env.DB_NAME || "campusplace"}`;
+        // Append the DB name ONLY when the URI doesn't already target a
+        // database. Atlas URIs carry a query string (?retryWrites=true&w=
+        // majority) — appending after it would corrupt the connection string.
+        let uri = process.env.MONGODB_URI;
+        const dbName = process.env.DB_NAME || "CPRS";
+        if (!uri.includes("/", uri.indexOf("://") + 3)) {
+            const queryIdx = uri.indexOf("?");
+            if (queryIdx === -1) {
+                uri = `${uri}/${dbName}`;
+            } else {
+                uri = `${uri.slice(0, queryIdx)}/${dbName}${uri.slice(queryIdx)}`;
+            }
+        }
         // Fail fast instead of hanging silently — otherwise Render's deploy
         // port scan times out with "No open ports detected" and no real error.
         const connectionInstance = await mongoose.connect(uri, {

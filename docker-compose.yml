@@ -1,7 +1,15 @@
-# Campus Placement — Backend stack
-# Deployed separately from the frontend. Includes the MongoDB and Redis
-# services the API depends on, so a single `docker compose up --build`
-# brings up the whole backend.
+# Campus Placement — Backend stack (LOCAL DEVELOPMENT)
+# Deployed separately from the frontend (frontend runs via `npm run dev`
+# on the host, pointing at http://localhost:6005).
+#
+# A single `docker compose up --build` brings up the API plus the Mongo /
+# Redis / Piston services it depends on, with the backend hot-reloading
+# from ./src (nodemon inside the container).
+#
+# Judge0 (alternative code-execution engine) is available under the
+# `code-exec` profile — opt in with:
+#   cp judge0.conf.example judge0.conf
+#   docker compose --profile code-exec up -d --build
 #
 # Note: if a MongoDB / Redis instance is already running on the host
 # (e.g. the Windows "MongoDB" service on 27017), override the host ports:
@@ -55,11 +63,17 @@ services:
       retries: 5
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: campusplace-backend
     restart: unless-stopped
+    command: npm run dev
     ports:
       - "${BACKEND_PORT:-6005}:6005"
+    volumes:
+      # Live source hot-reload (deps come from the image layer)
+      - ./src:/app/src
     environment:
       # Keep NODE_ENV=development so auth cookies are NOT marked Secure —
       # Secure cookies are dropped by browsers over plain http.
@@ -73,8 +87,8 @@ services:
       MONGODB_URI: mongodb://mongodb:27017
       DB_NAME: ${DB_NAME:-campusplace}
       REDIS_URL: redis://redis:6379
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
-      CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       SESSION_SECRET: ${SESSION_SECRET:-change-me-in-production}
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-change-me-in-production}
       ACCESS_TOKEN_EXPIRY: ${ACCESS_TOKEN_EXPIRY:-1d}
@@ -106,7 +120,71 @@ services:
       retries: 5
       start_period: 15s
 
+  # ---- Judge0 — alternative code-execution engine (opt-in profile) ----
+  # Modeled on the official judge0 compose. Requires a judge0.conf file:
+  #   cp judge0.conf.example judge0.conf
+  # The app's PISTON_API_URL still points at the bundled Piston engine —
+  # Judge0 is provisioned here as an alternative sandbox for future use.
+  judge0:
+    image: judge0/judge0:latest
+    profiles: ["code-exec"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - "${JUDGE0_PORT:-2358}:2358"
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    profiles: ["code-exec"]
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-db:
+    image: postgres:16.2
+    profiles: ["code-exec"]
+    env_file: judge0.conf
+    volumes:
+      - judge0_data:/var/lib/postgresql/data/
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  judge0-redis:
+    image: redis:7.2.4
+    profiles: ["code-exec"]
+    command: [
+      "bash", "-c",
+      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: judge0.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   mongo_data:
   redis_data:
   piston_packages:
+  judge0_data:

@@ -1,4 +1,6 @@
 # Backend — Campus Placement API (Express + Mongoose + Socket.io)
+# DEV image: keeps devDependencies (nodemon) and runs with hot reload.
+# docker-compose.yml bind-mounts ./src into the container for live edits.
 # node:20-slim (glibc) is used instead of alpine so the bcrypt native module
 # installs cleanly without needing build toolchains.
 
@@ -10,29 +12,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy the application source
+# Copy the application source (overridden at runtime by the bind mount)
 COPY . .
 
 EXPOSE 6005
 
-# `npm start` runs `node -r dotenv/config src/index.js`. Any .env file in the
-# image is ignored (see .dockerignore); runtime config comes from environment
-# variables passed by docker-compose, which take precedence over .env.
-CMD ["npm", "start"]
-
-# FOR PRODUCTION
-# FROM node:22-alpine
-
-# WORKDIR /app
-
-# COPY package*.json ./
-
-# RUN npm ci --omit=dev
-
-# COPY . .
-
-# ENV NODE_ENV=production
-
-# EXPOSE 6005
-
-# CMD ["npm", "start"]
+# `npm run dev` = nodemon -r dotenv/config --experimental-json-modules src/index.js
+CMD ["npm", "run", "dev"]

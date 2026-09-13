@@ -1,0 +1,16 @@
+name: Upstash Redis Keepalive
+
+on:
+  schedule:
+    # Runs at 00:00 every Tuesday and Friday (Twice a week is plenty)
+    - cron: '0 0 * * 2,5'
+  workflow_dispatch: # Allows you to manually trigger it from the GitHub UI
+
+jobs:
+  ping-redis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send keepalive request to Upstash HTTP API
+        run: |
+          curl -X POST "${{ secrets.UPSTASH_REDIS_REST_URL }}/ping" \
+               -H "Authorization: Bearer ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}"

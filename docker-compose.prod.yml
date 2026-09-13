@@ -64,7 +64,7 @@ services:
       PORT: 6005
       PISTON_API_URL: http://piston:2000/api/v2/piston/execute
       JUDGE0_API_URL: http://judge0:2358
-      CODE_EXECUTION_ENGINES: ${CODE_EXECUTION_ENGINES:-self_piston,judge0,public_piston,community_piston}
+      CODE_EXECUTION_ENGINES: ${CODE_EXECUTION_ENGINES:-self_piston,judge0,public_piston,community_piston,onecompiler}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
       CLAMAV_FAIL_OPEN: ${CLAMAV_FAIL_OPEN:-false}

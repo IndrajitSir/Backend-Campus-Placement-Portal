@@ -49,9 +49,11 @@ Push to the default branch (auto-deploy) or **Manual Deploy** → **Deploy lates
 commit** in the dashboard.
 
 ### 1.4 What degrades on Render (no sidecars)
-- **Code execution**: only the public/community Piston endpoints exist. Set
-  `PISTON_API_KEY` (emkc.org requires one since Feb 2026) or expect the
-  endpoint to 503 after all engines fail.
+- **Code execution**: Piston/Judge0 containers don't exist here, but the free
+  **OneCompiler** API is the reliable fallback (no key) — order is
+  `public_piston,community_piston,onecompiler` in `render.yaml`. Set
+  `PISTON_API_KEY` (emkc.org requires one since Feb 2026) to enable the
+  public Piston endpoints *before* OneCompiler.
 - **File scanning**: `CLAMAV_HOST` unset → the ClamAV step is skipped; the
   `file-type` signature check + `sharp` EXIF stripping still run.
 - **Deadline reminders**: same as compose — enabled if SMTP or Resend is set.

@@ -46,13 +46,13 @@ services:
         sync: false
 
       # --- Code execution WITHOUT sidecars (Piston/Judge0 not on Render) ---
-      # Only the public/community Piston endpoints exist here. emkc.org has
-      # required an API key since Feb 2026 — get one from the Piston
-      # maintainers, or set CODE_EXECUTION_ENGINES to a single engine.
+      # The free OneCompiler API (no key) is the reliable fallback here.
+      # emkc.org has required a key since Feb 2026 — set PISTON_API_KEY if
+      # you want the public Piston endpoints before OneCompiler.
       - key: CODE_EXECUTION_ENGINES
-        value: public_piston,community_piston
+        value: public_piston,community_piston,onecompiler
       - key: PISTON_API_KEY
-        sync: false                   # blank → public fallbacks are skipped
+        sync: false                   # blank → public Piston is skipped
 
       # --- Upload scanning WITHOUT a clamd container ---
       # Leave CLAMAV_HOST unset → ClamAV client reports "disabled" and

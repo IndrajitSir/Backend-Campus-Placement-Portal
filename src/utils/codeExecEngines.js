@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------
-// Code-execution engine registry — Piston + Judge0 with ordered failover.
+// Code-execution engine registry — Piston + Judge0 + OneCompiler with ordered
+// failover.
 //
 // Each engine is exposed as an async runner that either returns a normalized
 // result { stdout, stderr, compileError } or throws (the controller then
@@ -11,6 +12,8 @@
 //                    Judge0 has no runtime for, e.g. sql)
 //   public_piston  → https://emkc.org/api/v2/piston/execute
 //   community_piston → community mirrors
+//   onecompiler    → https://onecompiler.com/api/console/run (free public API;
+//                    skips languages with no OneCompiler runtime, e.g. sql)
 // ---------------------------------------------------------------------------
 
 import logger from "./Logger/logger.js";
@@ -30,6 +33,26 @@ const PISTON_API_KEY = process.env.PISTON_API_KEY || null;
 
 const JUDGE0_URL = process.env.JUDGE0_API_URL || null;
 const JUDGE0_AUTH_TOKEN = process.env.JUDGE0_AUTH_TOKEN || null;
+
+// OneCompiler free public API (no key required). Override only if you proxy
+// or self-host it.
+const ONECOMPILER_URL = process.env.ONECOMPILER_API_URL || "https://onecompiler.com/api/console/run";
+
+// OneCompiler detects the language from the file extension — the controller's
+// generic "main.<language>" name would not be recognized, so use proper names.
+const ONECOMPILER_FILE_NAMES = {
+  javascript: "index.js",
+  typescript: "index.ts",
+  python: "main.py",
+  java: "Main.java",
+  c: "main.c",
+  cpp: "main.cpp",
+  php: "index.php",
+  kotlin: "Main.kt",
+  rust: "main.rs",
+  go: "main.go",
+  dart: "main.dart",
+};
 
 // Judge0 language_ids (standard Judge0 distribution). sql has no Judge0
 // runtime — it stays Piston-only (see buildExecutionRunners).
@@ -130,6 +153,43 @@ const runJudge0 = async ({ language, codeToSend }) => {
   };
 };
 
+// --- OneCompiler adapter ----------------------------------------------------
+
+const runOneCompiler = async ({ language, codeToSend }) => {
+  const payload = {
+    language,
+    files: [{ name: ONECOMPILER_FILE_NAMES[language], content: codeToSend }],
+  };
+
+  const response = await fetchWithTimeout(ONECOMPILER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OneCompiler returned HTTP ${response.status}`);
+  }
+
+  const raw = await response.json();
+  // console/run returns a single result object; the newer v1/run API returns
+  // an array of results (one per stdin) — accept both.
+  const item = Array.isArray(raw) ? raw[0] : raw;
+  if (!item || typeof item !== "object") {
+    throw new Error("OneCompiler returned an invalid response");
+  }
+
+  const status = String(item.status || "").toLowerCase();
+  const exception = item.exception || item.error || "";
+
+  return {
+    stdout: (item.stdout || "").slice(0, 50_000),
+    stderr: (item.stderr || "").slice(0, 50_000),
+    compileError: (item.compile_output || (status === "error" || status === "failed" ? exception : ""))
+      .slice(0, 50_000),
+  };
+};
+
 // --- Registry -------------------------------------------------------------
 
 /**
@@ -137,7 +197,7 @@ const runJudge0 = async ({ language, codeToSend }) => {
  * Runners throw on failure; the controller tries them in sequence.
  */
 export function buildExecutionRunners({ langConfig, codeToSend, fileName, language }) {
-  const order = (process.env.CODE_EXECUTION_ENGINES || "self_piston,judge0,public_piston,community_piston")
+  const order = (process.env.CODE_EXECUTION_ENGINES || "self_piston,judge0,public_piston,community_piston,onecompiler")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -164,6 +224,13 @@ export function buildExecutionRunners({ langConfig, codeToSend, fileName, langua
           runners.push(() => runJudge0({ language, codeToSend }));
         } else if (JUDGE0_URL) {
           logger.warn(`Judge0 has no runtime for language "${language}" — skipping`);
+        }
+        break;
+      case "onecompiler":
+        if (ONECOMPILER_FILE_NAMES[language]) {
+          runners.push(() => runOneCompiler({ language, codeToSend }));
+        } else {
+          logger.warn(`OneCompiler has no runtime for language "${language}" — skipping`);
         }
         break;
       default:

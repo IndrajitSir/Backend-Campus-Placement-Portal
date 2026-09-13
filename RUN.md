@@ -162,7 +162,7 @@ Skip the compose file and set every key from §5 as environment variables in the
 | `MAIL_PROVIDER_ORDER` | ◻️ | Default `nodemailer,resend` — providers tried in order until one succeeds. Job disabled when both are blank. |
 | `JUDGE0_AUTH_TOKEN` | ◻️ | `printf "user:pass" | base64` — only if you enable auth in `judge0.conf`. |
 | `PISTON_API_KEY` | ◻️ | Authorization key for the **public/community** Piston endpoints. The public `emkc.org` API has required one since Feb 2026 (obtain from the Piston maintainers). Blank ⇒ public fallbacks are skipped; self-hosted Piston/Judge0 still work. |
-| `CODE_EXECUTION_ENGINES` | ◻️ | Default `self_piston,judge0,public_piston,community_piston` — fine as-is. |
+| `CODE_EXECUTION_ENGINES` | ◻️ | Default `self_piston,judge0,public_piston,community_piston,onecompiler` — fine as-is. OneCompiler (free, no key) is the last-resort fallback. |
 | `CLAMAV_FAIL_OPEN` | ◻️ | `false` (secure default). |
 | `MAX_UPLOAD_MB` | ◻️ | `10` default. |
 | `judge0.conf`: `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `SECRET_KEY_BASE` | ⚠️ | Random values (`openssl rand -base64 32` / `-hex 64`). |
@@ -182,6 +182,6 @@ Skip the compose file and set every key from §5 as environment variables in the
 | --- | --- |
 | Backend boots then exits immediately | Bad `MONGODB_URI` — the DB-name append is Atlas-safe now (query strings handled). |
 | Uploads rejected 422 | ClamAV still downloading its DB on first boot, or a real infection. Check `docker compose logs clamav`. |
-| Code execution 503 | All engines failed — check Piston (`node -e "require('http').get('http://localhost:2000/',r=>console.log(r.statusCode))"` — returns 200 when up) and Judge0 (`curl http://localhost:2358/about`) are up; if using public fallbacks, set `PISTON_API_KEY` (emkc.org requires one since Feb 2026). |
+| Code execution 503 | All engines failed — check Piston (`node -e "require('http').get('http://localhost:2000/',r=>console.log(r.statusCode))"` — returns 200 when up), Judge0 (`curl http://localhost:2358/about`) and that `onecompiler` is reachable from the server (free public API, no key); if using public Piston fallbacks, set `PISTON_API_KEY` (emkc.org requires one since Feb 2026). |
 | CORS errors in the browser | `FRONTEND_URL` doesn't match the origin you're browsing from. |
 | OAuth "redirect_uri_mismatch" | Callback URL in the provider dashboard must match `${FRONTEND_URL}/auth/.../callback` used in `.env`. |

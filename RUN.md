@@ -180,6 +180,6 @@ Skip the compose file and set every key from §5 as environment variables in the
 | --- | --- |
 | Backend boots then exits immediately | Bad `MONGODB_URI` — the DB-name append is Atlas-safe now (query strings handled). |
 | Uploads rejected 422 | ClamAV still downloading its DB on first boot, or a real infection. Check `docker compose logs clamav`. |
-| Code execution 503 | All engines failed — check Piston (`node -e "fetch('http://localhost:2000/healthz').then(r=>console.log(r.status))"`) and Judge0 (`curl http://localhost:2358/about`) are up; if using public fallbacks, set `PISTON_API_KEY` (emkc.org requires one since Feb 2026). |
+| Code execution 503 | All engines failed — check Piston (`node -e "require('http').get('http://localhost:2000/',r=>console.log(r.statusCode))"` — returns 200 when up) and Judge0 (`curl http://localhost:2358/about`) are up; if using public fallbacks, set `PISTON_API_KEY` (emkc.org requires one since Feb 2026). |
 | CORS errors in the browser | `FRONTEND_URL` doesn't match the origin you're browsing from. |
 | OAuth "redirect_uri_mismatch" | Callback URL in the provider dashboard must match `${FRONTEND_URL}/auth/.../callback` used in `.env`. |

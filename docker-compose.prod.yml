@@ -39,8 +39,9 @@ services:
     volumes:
       - piston_packages:/piston/packages
     healthcheck:
-      # node is the runtime inside the piston image — avoid curl (not present)
-      test: ["CMD", "node", "-e", "fetch('http://localhost:2000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      # Piston's API has no /healthz route — GET / returns 200 when up.
+      # The image is node:15 (no global fetch) → use the built-in http module.
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:2000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 5

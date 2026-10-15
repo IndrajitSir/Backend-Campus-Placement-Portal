@@ -10,6 +10,11 @@ const router = Router();
 // captured by the dynamic segment.
 router.route("/export").get(verifyUserWithRole(["admin", "super_admin", "placement_staff"]), exportApplicationsCsv);
 
+router.route("/shortlisted-candidates").get(verifyUserWithRole(["super_admin", "placement_staff", "admin"]), getCandidatesByStatus.bind(null, "shortlisted"));
+router.route("/selected-candidates").get(verifyUserWithRole(["super_admin", "placement_staff", "admin"]), getCandidatesByStatus.bind(null, "selected"));
+router.route("/applied-candidates").get(verifyUserWithRole(["super_admin", "placement_staff", "admin"]), getCandidatesByStatus.bind(null, "applied"));
+router.route("/rejected-candidates").get(verifyUserWithRole(["super_admin", "placement_staff", "admin"]), getCandidatesByStatus.bind(null, "rejected"));
+
 router.route("/:candidateStatus").get(verifyUserWithRole(["super_admin", "placement_staff", "admin"]), getCandidatesByStatus);
 
 export default router;

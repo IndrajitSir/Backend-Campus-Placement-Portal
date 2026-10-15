@@ -1,4 +1,5 @@
 import { registerChatHandlers } from "./registerChatHandlers.js";
+import { registerPersonalChatHandlers } from "../v2/socket/registerPersonalChat.js";
 import { registerInterviewHandlers } from "./registerInterviewHandlers.js";
 import { userSocketMap } from "../constants.js";
 import { socketAuthMiddleware } from "./authMiddleware.js";
@@ -42,6 +43,7 @@ export function setupSocket(io) {
         // consume them via the SSE endpoint /api/v1/system/logs/stream.
         registerInterviewHandlers(io, socket);
         registerChatHandlers(io, socket);
+        registerPersonalChatHandlers(io, socket);
 
         socket.on("error", (err) => {
             logger.error(`Socket error (user=${userId}): ${err.message}`);
